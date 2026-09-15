@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+    --stage-950: #0A0A0F;
+    --stage-900: #17171F;
+    --stage-800: #232330;
+    --stage-700: #323242;
+    --stage-400: #9A9AA5;
+    --stage-50: #F5F5F7;
+    --primary-500: #FF3D57;
+    --secondary-500: #7C5CFF;
+    --accent-400: #2FE6D0;
+    --warn-400: #FFB020;
+}
+
+body {
+    background-color: var(--stage-950);
+    color: var(--stage-50);
+    font-family: 'Inter', sans-serif;
+}
+
+.font-headline {
+    font-family: 'Anton', sans-serif;
+    letter-spacing: 0.03em;
+}
+
+.font-mono-code {
+    font-family: 'Space Grotesk', monospace;
+}
+
+.glow-primary {
+    box-shadow: 0 0 35px -5px rgba(255, 61, 87, 0.45);
+}
+
+.glow-primary-lg {
+    box-shadow: 0 0 60px -10px rgba(255, 61, 87, 0.55);
+}
+
+.glow-secondary {
+    box-shadow: 0 0 35px -5px rgba(124, 92, 255, 0.45);
+}
+
+.glow-red {
+    box-shadow: 0 0 35px -5px rgba(255, 61, 87, 0.4);
+}
+
+.glow-violet {
+    box-shadow: 0 0 35px -5px rgba(124, 92, 255, 0.4);
+}
+
+.glow-spotify {
+    box-shadow: 0 0 25px -5px rgba(29, 185, 84, 0.35);
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0A0A0F;
+}
+::-webkit-scrollbar-thumb {
+    background: #232330;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #7C5CFF;
+}
+
+@keyframes pulse-glow {
+    0%, 100% { opacity: 0.35; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(1.08); }
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 6s infinite ease-in-out;
+}
+
+@keyframes marquee-left {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+.marquee-track {
+    animation: marquee-left 18s linear infinite;
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid #2FE6D0 !important;
+    outline-offset: 3px !important;
+}
+
+input:focus {
+    outline: none !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.25) !important;
+}
