@@ -37,10 +37,10 @@
         </a>
 
         <div class="mt-4 pb-2">
-            <button type="button" onclick="openCreatePostModal()" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#FF3D57] text-white font-semibold text-sm shadow-[0_0_16px_rgba(255,61,87,0.3)] hover:brightness-110 transition-all cursor-pointer">
+            <a href="{{ route('blogs.create') }}" class="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#FF3D57] text-white font-semibold text-sm shadow-[0_0_16px_rgba(255,61,87,0.3)] hover:brightness-110 transition-all cursor-pointer">
                 <i class="fa-solid fa-plus text-xs"></i>
-                <span>Nuevo post</span>
-            </button>
+                <span>Nuevo Blog</span>
+            </a>
         </div>
     </nav>
 

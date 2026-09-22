@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use App\Models\Publicacion;
 use App\Models\Participacion;
 use App\Models\User;
@@ -78,6 +79,7 @@ class ProfileController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = $id ? User::findOrFail($id) : Auth::user();
+        $authUserId = Auth::id();
 
         // Cargar publicaciones creadas por el usuario objetivo
         $posts = Publicacion::with(['evento', 'likes'])
@@ -95,12 +97,105 @@ class ProfileController extends Controller
             }
         }
 
-        // Resolución dinámica del nombre del archivo Blade para evitar InvalidArgumentException
+        // Obtener listas y conteo de seguidores / seguidos con estado de seguimiento del usuario autenticado
+        $followingList = [];
+        $followersList = [];
+        $isFollowingAuthor = false;
+
+        if (Schema::hasTable('seguidores')) {
+            try {
+                // IDs que sigue actualmente el usuario autenticado
+                $authFollowingIds = DB::table('seguidores')
+                    ->where('id_seguidor', $authUserId)
+                    ->pluck('id_seguido')
+                    ->toArray();
+
+                $followingList = DB::table('seguidores')
+                    ->join('users', 'users.id_usuario', '=', 'seguidores.id_seguido')
+                    ->where('seguidores.id_seguidor', $user->id_usuario)
+                    ->select('users.id_usuario', 'users.nombre', 'users.handle', 'users.avatar')
+                    ->get()
+                    ->map(function ($person) use ($authFollowingIds) {
+                        $person->is_following = in_array($person->id_usuario, $authFollowingIds);
+                        return $person;
+                    })
+                    ->toArray();
+
+                $followersList = DB::table('seguidores')
+                    ->join('users', 'users.id_usuario', '=', 'seguidores.id_seguidor')
+                    ->where('seguidores.id_seguido', $user->id_usuario)
+                    ->select('users.id_usuario', 'users.nombre', 'users.handle', 'users.avatar')
+                    ->get()
+                    ->map(function ($person) use ($authFollowingIds) {
+                        $person->is_following = in_array($person->id_usuario, $authFollowingIds);
+                        return $person;
+                    })
+                    ->toArray();
+
+                $isFollowingAuthor = DB::table('seguidores')
+                    ->where('id_seguidor', $authUserId)
+                    ->where('id_seguido', $user->id_usuario)
+                    ->exists();
+            } catch (\Throwable $e) {
+                // Silenciar en caso de mantenimiento
+            }
+        }
+
         $viewName = view()->exists('profile.show') 
             ? 'profile.show' 
             : (view()->exists('profile.profile') ? 'profile.profile' : 'profile');
 
-        return view($viewName, compact('user', 'posts', 'showsCount'));
+        return view($viewName, compact('user', 'posts', 'showsCount', 'followingList', 'followersList', 'isFollowingAuthor'));
+    }
+
+    /**
+     * Alterna el estado de seguimiento a un usuario (Seguir / Dejar de seguir).
+     */
+    public function toggleFollow($id)
+    {
+        if (!Schema::hasTable('seguidores')) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Tabla de seguidores no encontrada.'
+            ], 400);
+        }
+
+        $targetUser = User::findOrFail($id);
+        $authUserId = Auth::id();
+
+        if ($authUserId == $targetUser->id_usuario) {
+            return response()->json(['success' => false, 'message' => 'No puedes seguirte a ti mismo'], 400);
+        }
+
+        $exists = DB::table('seguidores')
+            ->where('id_seguidor', $authUserId)
+            ->where('id_seguido', $targetUser->id_usuario)
+            ->exists();
+
+        if ($exists) {
+            DB::table('seguidores')
+                ->where('id_seguidor', $authUserId)
+                ->where('id_seguido', $targetUser->id_usuario)
+                ->delete();
+            $isFollowing = false;
+        } else {
+            DB::table('seguidores')->insert([
+                'id_seguidor' => $authUserId,
+                'id_seguido'  => $targetUser->id_usuario,
+                'created_at'  => now(),
+            ]);
+            $isFollowing = true;
+        }
+
+        $followersCount = DB::table('seguidores')
+            ->where('id_seguido', $targetUser->id_usuario)
+            ->count();
+
+        return response()->json([
+            'success'         => true,
+            'following'       => $isFollowing,
+            'followers_count' => $followersCount,
+        ]);
     }
 
     /**

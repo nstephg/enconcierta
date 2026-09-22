@@ -1,43 +1,53 @@
 // Cambio de Pestañas (Mis momentos / Editar perfil)
+// Cambio de Pestañas (Momentos / Blogs / Configuración)
 window.switchProfileTab = function(tab) {
     const postsSection = document.getElementById('tab-content-posts');
+    const blogsSection = document.getElementById('tab-content-blogs');
     const editSection = document.getElementById('tab-content-editar');
+
     const postsHeader = document.getElementById('header-posts-view');
     const editHeader = document.getElementById('header-edit-view');
 
     const btnPosts = document.getElementById('btn-tab-posts');
-    const btnEdit = document.getElementById('btn-tab-editar');
+    const btnBlogs = document.getElementById('btn-tab-blogs');
 
     const activeClasses = ['bg-[#FF3D57]', 'text-white', 'shadow-[0_0_15px_rgba(255,61,87,0.35)]'];
     const inactiveClasses = ['text-[#9A9AA5]', 'hover:text-white'];
 
-    if (tab === 'editar') {
-        if (postsSection) postsSection.classList.add('hidden');
-        if (postsHeader) postsHeader.classList.add('hidden');
+    // Ocultar todas las secciones de contenido
+    if (postsSection) postsSection.classList.add('hidden');
+    if (blogsSection) blogsSection.classList.add('hidden');
+    if (editSection) editSection.classList.add('hidden');
+
+    if (postsHeader) postsHeader.classList.remove('hidden');
+    if (editHeader) editHeader.classList.add('hidden');
+
+    // Resetear apariencia de los botones
+    if (btnPosts) {
+        btnPosts.classList.remove(...activeClasses);
+        btnPosts.classList.add(...inactiveClasses);
+    }
+    if (btnBlogs) {
+        btnBlogs.classList.remove(...activeClasses);
+        btnBlogs.classList.add(...inactiveClasses);
+    }
+
+    if (tab === 'blogs') {
+        if (blogsSection) blogsSection.classList.remove('hidden');
+        if (btnBlogs) {
+            btnBlogs.classList.remove(...inactiveClasses);
+            btnBlogs.classList.add(...activeClasses);
+        }
+    } else if (tab === 'editar') {
         if (editSection) editSection.classList.remove('hidden');
+        if (postsHeader) postsHeader.classList.add('hidden');
         if (editHeader) editHeader.classList.remove('hidden');
-
-        if (btnEdit) {
-            btnEdit.classList.remove(...inactiveClasses);
-            btnEdit.classList.add(...activeClasses);
-        }
-        if (btnPosts) {
-            btnPosts.classList.remove(...activeClasses);
-            btnPosts.classList.add(...inactiveClasses);
-        }
     } else {
-        if (editSection) editSection.classList.add('hidden');
-        if (editHeader) editHeader.classList.add('hidden');
+        // 'posts' / 'momentos' por defecto
         if (postsSection) postsSection.classList.remove('hidden');
-        if (postsHeader) postsHeader.classList.remove('hidden');
-
         if (btnPosts) {
             btnPosts.classList.remove(...inactiveClasses);
             btnPosts.classList.add(...activeClasses);
-        }
-        if (btnEdit) {
-            btnEdit.classList.remove(...activeClasses);
-            btnEdit.classList.add(...inactiveClasses);
         }
     }
 };
@@ -53,16 +63,22 @@ window.openSocialModal = function(type) {
     const followersCount = document.getElementById('stat-followers-count')?.innerText || '0';
 
     if (!modal) return;
+    const isOwn = modal.getAttribute('data-is-own') === '1';
+
     modal.classList.remove('hidden');
 
     if (type === 'siguiendo') {
         if (title) title.innerText = 'Siguiendo';
-        if (subtitle) subtitle.innerText = `${followingCount} melómanos que sigues`;
+        if (subtitle) subtitle.innerText = isOwn 
+            ? `${followingCount} melómanos que sigues` 
+            : `${followingCount} melómanos que sigue`;
         if (listFollowing) listFollowing.classList.remove('hidden');
         if (listFollowers) listFollowers.classList.add('hidden');
     } else {
         if (title) title.innerText = 'Seguidores';
-        if (subtitle) subtitle.innerText = `${followersCount} melómanos te siguen`;
+        if (subtitle) subtitle.innerText = isOwn 
+            ? `${followersCount} melómanos te siguen` 
+            : `${followersCount} melómanos le siguen`;
         if (listFollowers) listFollowers.classList.remove('hidden');
         if (listFollowing) listFollowing.classList.add('hidden');
     }
@@ -86,15 +102,63 @@ window.filterSocialList = function(query) {
     });
 };
 
-window.toggleFollowUser = function(btn) {
-    if (btn.classList.contains('bg-[#FF3D57]')) {
-        btn.classList.remove('bg-[#FF3D57]', 'text-white');
-        btn.classList.add('border', 'border-white/15', 'text-[#9A9AA5]');
-        btn.innerText = 'Siguiendo';
-    } else {
-        btn.classList.remove('border', 'border-white/15', 'text-[#9A9AA5]');
-        btn.classList.add('bg-[#FF3D57]', 'text-white');
-        btn.innerText = 'Seguir';
+window.toggleFollowUser = async function(userId, btn) {
+    if (!userId || btn.disabled) return;
+    btn.disabled = true;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const response = await fetch(`/usuarios/${userId}/follow`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            const isCompactBtn = btn.closest('.social-item') !== null;
+            const modal = document.getElementById('socialModal');
+            const isOwnProfile = modal?.getAttribute('data-is-own') === '1';
+
+            if (data.following) {
+                btn.textContent = 'Siguiendo';
+                if (isCompactBtn) {
+                    btn.className = 'w-20 py-1 rounded-full text-xs font-semibold border border-white/15 text-[#9A9AA5] cursor-pointer transition-all text-center flex-shrink-0';
+                } else {
+                    btn.className = 'px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border border-white/15 text-[#9A9AA5]';
+                }
+            } else {
+                btn.textContent = 'Seguir';
+                if (isCompactBtn) {
+                    btn.className = 'w-20 py-1 rounded-full text-xs font-semibold bg-[#FF3D57] text-white shadow-[0_0_10px_rgba(255,61,87,0.3)] hover:brightness-110 cursor-pointer transition-all text-center flex-shrink-0';
+                } else {
+                    btn.className = 'px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer bg-[#FF3D57] text-white shadow-[0_0_12px_rgba(255,61,87,0.3)]';
+                }
+            }
+
+            // Actualización inteligente de contadores
+            if (!isCompactBtn) {
+                const followersStat = document.getElementById('stat-followers-count');
+                if (followersStat && data.followers_count !== undefined) {
+                    followersStat.textContent = data.followers_count;
+                }
+            } else if (isOwnProfile) {
+                const followingStat = document.getElementById('stat-following-count');
+                if (followingStat) {
+                    let currentFollowing = parseInt(followingStat.textContent) || 0;
+                    followingStat.textContent = data.following ? currentFollowing + 1 : Math.max(0, currentFollowing - 1);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error al cambiar el seguimiento:', error);
+    } finally {
+        btn.disabled = false;
     }
 };
 

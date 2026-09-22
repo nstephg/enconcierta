@@ -2,7 +2,24 @@ import './compose.js';
 import './post-detail.js';
 import './profile.js';
 
+import Alpine from 'alpinejs';
+
+window.Alpine = Alpine;
+
+Alpine.start();
+
 let selectedShowForSync = null;
+
+window.toggleProfileSettings = function() {
+    const editSection = document.getElementById('tab-content-editar');
+    const isEditing = editSection && !editSection.classList.contains('hidden');
+
+    if (isEditing) {
+        window.switchProfileTab('posts');
+    } else {
+        window.switchProfileTab('editar');
+    }
+};
 
 // 1. MANEJO DE TRANSPARENCIA Y NAVEGACIÓN DEL HEADER
 window.addEventListener("scroll", function() {

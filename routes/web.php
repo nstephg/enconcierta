@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SpotifyController;
+use App\Http\Controllers\BlogController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -24,6 +25,7 @@ Route::middleware(['auth'])->group(function () {
     // Perfil de usuario (Propio si no hay ID, o de tercero si se pasa {id})
     Route::get('/perfil/{id?}', [ProfileController::class, 'show'])->name('profile.show');
     Route::put('/perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/usuarios/{id}/follow', [ProfileController::class, 'toggleFollow'])->name('users.follow');
 
     // Dashboard y Publicaciones
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -38,6 +40,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/spotify/login', [SpotifyController::class, 'redirect'])->name('spotify.login');
     Route::get('/spotify/callback', [SpotifyController::class, 'callback'])->name('spotify.callback');
     Route::post('/spotify/disconnect', [SpotifyController::class, 'disconnect'])->name('spotify.disconnect');
+
+    // Blogs
+    Route::get('/blogs/crear', [BlogController::class, 'create'])->name('blogs.create');
+    Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
 });
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');

@@ -67,4 +67,20 @@ class User extends Authenticatable
         // Rol 2: Administrador | Rol 3: Verificado
         return in_array($this->id_rol, [2, 3]);
     }
+
+    /**
+     * Usuarios que siguen a este usuario (Seguidores).
+     */
+    public function followers()
+    {
+        return $this->belongsToMany(User::class, 'seguidores', 'id_seguido', 'id_seguidor');
+    }
+
+    /**
+     * Usuarios a los que este usuario sigue (Siguiendo).
+     */
+    public function following()
+    {
+        return $this->belongsToMany(User::class, 'seguidores', 'id_seguidor', 'id_seguido');
+    }
 }

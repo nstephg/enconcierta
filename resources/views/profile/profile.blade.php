@@ -43,15 +43,17 @@
     </div>
 
     <!-- Modal Social (Siguiendo / Seguidores) -->
-    <div id="socialModal" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center bg-black/75 backdrop-blur-md" onclick="closeSocialModal()">
-        <div class="w-full sm:max-w-[440px] rounded-t-2xl sm:rounded-2xl flex flex-col bg-[#0C0C13] border border-white/10 shadow-2xl max-h-[85vh]" onclick="event.stopPropagation()">
+    <div id="socialModal" data-is-own="{{ $isOwnProfile ? '1' : '0' }}" data-profile-id="{{ $user->id_usuario }}" class="fixed inset-0 z-[100] hidden flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4" onclick="closeSocialModal()">
+        <div class="w-full sm:max-w-[440px] rounded-t-3xl sm:rounded-2xl flex flex-col bg-[#0C0C13] border border-white/10 shadow-2xl h-[75vh] sm:h-auto sm:max-h-[85vh] overflow-hidden" onclick="event.stopPropagation()">
             <div class="flex justify-center pt-3 sm:hidden flex-shrink-0">
                 <div class="w-10 h-1 rounded-full bg-white/15"></div>
             </div>
             <div class="flex items-center justify-between px-5 py-4 flex-shrink-0 border-b border-white/[0.06]">
                 <div>
                     <h2 id="socialModalTitle" class="text-[#F5F5F7] font-bold text-base">Siguiendo</h2>
-                    <p id="socialModalSubtitle" class="text-[#9A9AA5] text-xs mt-0.5">{{ $followingCount }} melómanos que sigues</p>
+                    <p id="socialModalSubtitle" class="text-[#9A9AA5] text-xs mt-0.5">
+                        {{ $followingCount }} {{ $isOwnProfile ? 'melómanos que sigues' : 'melómanos que sigue' }}
+                    </p>
                 </div>
                 <button type="button" onclick="closeSocialModal()" class="w-8 h-8 rounded-full flex items-center justify-center text-[#9A9AA5] hover:text-white bg-white/5 transition-all cursor-pointer">
                     <i class="fa-solid fa-xmark"></i>
@@ -63,38 +65,87 @@
                     <input type="text" id="socialSearchInput" oninput="filterSocialList(this.value)" placeholder="Buscar…" class="flex-1 bg-transparent text-[#F5F5F7] text-xs placeholder-[#9A9AA5] outline-none">
                 </div>
             </div>
-            <div class="flex-1 overflow-y-auto">
+            <div class="flex-1 overflow-y-auto min-h-0">
+                <!-- Lista de Siguiendo -->
                 <div id="social-list-following" class="flex flex-col">
                     @forelse($followingList as $person)
-                        <div class="social-item flex items-center gap-3 px-5 py-3 border-b border-white/[0.04]" data-name="{{ strtolower($person['name'] ?? $person->nombre ?? '') }}" data-username="{{ strtolower($person['username'] ?? $person->handle ?? '') }}">
-                            <img src="{{ $person['avatar'] ?? $person->avatar_url ?? asset('images/default-avatar.svg') }}" class="w-11 h-11 rounded-full object-cover border-2 border-white/[0.08]">
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[#F5F5F7] text-sm font-semibold truncate">{{ $person['name'] ?? $person->nombre }}</div>
-                                <div class="text-[#9A9AA5] text-xs truncate">{{ '@' . ($person['username'] ?? $person->handle) }}</div>
-                            </div>
-                            <button type="button" onclick="toggleFollowUser(this)" class="px-4 py-1.5 rounded-xl text-xs font-semibold border border-white/15 text-[#9A9AA5]">Siguiendo</button>
+                        @php
+                            $pAvatar = !empty($person->avatar) 
+                                ? (str_starts_with($person->avatar, 'http') ? $person->avatar : asset('storage/' . $person->avatar))
+                                : asset('images/default-avatar.svg');
+                            $isMe = auth()->id() == $person->id_usuario;
+                            $pVerified = ($person->id_rol ?? 1) == 2 || !empty($person->es_verificado);
+                        @endphp
+                        <div class="social-item flex items-center justify-between gap-3 px-5 py-3 border-b border-white/[0.04]" 
+                             data-name="{{ strtolower($person->nombre ?? '') }}" 
+                             data-username="{{ strtolower($person->handle ?? '') }}">
+                            <!-- Enlace al Perfil del Usuario -->
+                            <a href="{{ route('profile.show', $person->id_usuario) }}" class="flex items-center gap-3 flex-1 min-w-0 group cursor-pointer">
+                                <img src="{{ $pAvatar }}" class="w-11 h-11 rounded-full object-cover border-2 border-white/[0.08] group-hover:border-[#FF3D57] transition-colors flex-shrink-0">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[#F5F5F7] text-sm font-semibold truncate group-hover:text-[#FF3D57] transition-colors">{{ $person->nombre }}</span>
+                                        @if($pVerified)
+                                            <i class="fa-solid fa-circle-check text-[#7C5CFF] text-xs flex-shrink-0" title="Melómano verificado"></i>
+                                        @endif
+                                    </div>
+                                    <div class="text-[#9A9AA5] text-xs truncate">{{ '@' . $person->handle }}</div>
+                                </div>
+                            </a>
+                            @if(!$isMe)
+                                <button type="button" 
+                                        onclick="toggleFollowUser({{ $person->id_usuario }}, this)" 
+                                        class="w-24 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all text-center flex-shrink-0 {{ $person->is_following ? 'border border-white/15 text-[#9A9AA5]' : 'bg-[#FF3D57] text-white shadow-[0_0_12px_rgba(255,61,87,0.3)]' }}">
+                                    {{ $person->is_following ? 'Siguiendo' : 'Seguir' }}
+                                </button>
+                            @endif
                         </div>
                     @empty
                         <div class="text-center py-10 text-[#9A9AA5] text-xs">
                             <i class="fa-solid fa-user-plus text-sm mb-2 text-[#7C5CFF]/50 block"></i>
-                            Aún no sigue a ningún melómano.
+                            {{ $isOwnProfile ? 'Aún no sigues a ningún melómano.' : 'Aún no sigue a ningún melómano.' }}
                         </div>
                     @endforelse
                 </div>
+
+                <!-- Lista de Seguidores -->
                 <div id="social-list-followers" class="flex flex-col hidden">
                     @forelse($followersList as $person)
-                        <div class="social-item flex items-center gap-3 px-5 py-3 border-b border-white/[0.04]" data-name="{{ strtolower($person['name'] ?? $person->nombre ?? '') }}" data-username="{{ strtolower($person['username'] ?? $person->handle ?? '') }}">
-                            <img src="{{ $person['avatar'] ?? $person->avatar_url ?? asset('images/default-avatar.svg') }}" class="w-11 h-11 rounded-full object-cover border-2 border-white/[0.08]">
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[#F5F5F7] text-sm font-semibold truncate">{{ $person['name'] ?? $person->nombre }}</div>
-                                <div class="text-[#9A9AA5] text-xs truncate">{{ '@' . ($person['username'] ?? $person->handle) }}</div>
-                            </div>
-                            <button type="button" onclick="toggleFollowUser(this)" class="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[#FF3D57] text-white">Seguir</button>
+                        @php
+                            $pAvatar = !empty($person->avatar) 
+                                ? (str_starts_with($person->avatar, 'http') ? $person->avatar : asset('storage/' . $person->avatar))
+                                : asset('images/default-avatar.svg');
+                            $isMe = auth()->id() == $person->id_usuario;
+                            $pVerified = ($person->id_rol ?? 1) == 2 || !empty($person->es_verificado);
+                        @endphp
+                        <div class="social-item flex items-center justify-between gap-3 px-5 py-3 border-b border-white/[0.04]" 
+                             data-name="{{ strtolower($person->nombre ?? '') }}" 
+                             data-username="{{ strtolower($person->handle ?? '') }}">
+                            <!-- Enlace al Perfil del Usuario -->
+                            <a href="{{ route('profile.show', $person->id_usuario) }}" class="flex items-center gap-3 flex-1 min-w-0 group cursor-pointer">
+                                <img src="{{ $pAvatar }}" class="w-11 h-11 rounded-full object-cover border-2 border-white/[0.08] group-hover:border-[#FF3D57] transition-colors flex-shrink-0">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-[#F5F5F7] text-sm font-semibold truncate group-hover:text-[#FF3D57] transition-colors">{{ $person->nombre }}</span>
+                                        @if($pVerified)
+                                            <i class="fa-solid fa-circle-check text-[#7C5CFF] text-xs flex-shrink-0" title="Melómano verificado"></i>
+                                        @endif
+                                    </div>
+                                    <div class="text-[#9A9AA5] text-xs truncate">{{ '@' . $person->handle }}</div>
+                                </div>
+                            </a>
+                            @if(!$isMe)
+                                <button type="button" 
+                                        onclick="toggleFollowUser({{ $person->id_usuario }}, this)" 
+                                        class="w-24 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all text-center flex-shrink-0 {{ $person->is_following ? 'border border-white/15 text-[#9A9AA5]' : 'bg-[#FF3D57] text-white shadow-[0_0_12px_rgba(255,61,87,0.3)]' }}">
+                                    {{ $person->is_following ? 'Siguiendo' : 'Seguir' }}
+                                </button>
+                            @endif
                         </div>
                     @empty
                         <div class="text-center py-10 text-[#9A9AA5] text-xs">
                             <i class="fa-solid fa-users text-sm mb-2 text-[#FF3D57]/50 block"></i>
-                            Aún no tiene seguidores.
+                            {{ $isOwnProfile ? 'Aún no tienes seguidores.' : 'Aún no tiene seguidores.' }}
                         </div>
                     @endforelse
                 </div>
@@ -115,21 +166,31 @@
             <div class="relative group cursor-pointer flex-shrink-0" onclick="openLightbox('{{ $avatarUrl }}')">
                 <img id="avatarImgPostView" src="{{ $avatarUrl }}" alt="{{ $user->nombre }}" class="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-[3px] border-[#0A0A0F]">
             </div>
-            <div class="flex-1 min-w-0 pb-1 flex items-center justify-between pr-2">
+            <div class="flex-1 min-w-0 pb-1 flex items-center justify-between pr-2 pt-14 sm:pt-16">
                 <div>
-                    <div class="flex items-center gap-1.5 mt-6">
+                    <div class="flex items-center gap-1.5">
                         <h2 class="text-[#F5F5F7] font-bold text-base sm:text-lg truncate">{{ $user->nombre }}</h2>
-                        @if(($user->id_rol ?? 1) == 2)
+                        @if(($user->id_rol ?? 1) == 2 || !empty($user->es_verificado))
                             <i class="fa-solid fa-circle-check text-[#7C5CFF] text-sm" title="Melómano verificado"></i>
                         @endif
                     </div>
                     <div class="text-[#9A9AA5] text-xs sm:text-sm">{{ '@' . $user->handle }}</div>
                 </div>
 
-                <!-- Botón de Seguir (Visible si es el perfil de otra persona) -->
+                <!-- Botón de Acción Principal (Seguir o Configuración) -->
                 @if(!$isOwnProfile)
-                    <button type="button" onclick="toggleFollowUser(this)" class="px-5 py-2 rounded-xl text-xs font-bold transition-all mt-5 cursor-pointer {{ $isFollowingAuthor ? 'border border-white/15 text-[#9A9AA5]' : 'bg-[#FF3D57] text-white shadow-[0_0_12px_rgba(255,61,87,0.3)]' }}">
+                    <button type="button" 
+                            id="btn-follow-main"
+                            onclick="toggleFollowUser({{ $user->id_usuario }}, this)" 
+                            class="px-5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer {{ $isFollowingAuthor ? 'border border-white/15 text-[#9A9AA5]' : 'bg-[#FF3D57] text-white shadow-[0_0_12px_rgba(255,61,87,0.3)]' }}">
                         {{ $isFollowingAuthor ? 'Siguiendo' : 'Seguir' }}
+                    </button>
+                @else
+                    <button type="button" 
+                            onclick="toggleProfileSettings()" 
+                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-[#9A9AA5] hover:text-white bg-[#17171F] border border-white/10 hover:border-white/25 transition-all cursor-pointer shadow-sm"
+                            title="Configuración y Editar Perfil">
+                        <i class="fa-solid fa-gear text-xs sm:text-sm"></i>
                     </button>
                 @endif
             </div>
@@ -202,14 +263,24 @@
                         <span>Cambiar</span>
                     </div>
                 </div>
-                <div class="flex-1 min-w-0 pb-1">
-                    <div class="flex items-center gap-1.5 mt-6">
-                        <h2 class="text-[#F5F5F7] font-bold text-base sm:text-lg truncate">{{ $user->nombre }}</h2>
-                        @if($user->es_verificado)
-                            <i class="fa-solid fa-circle-check text-[#7C5CFF] text-sm" title="Melómano verificado"></i>
-                        @endif
+                <div class="flex-1 min-w-0 pb-1 flex items-center justify-between pr-2 pt-14 sm:pt-16">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h2 class="text-[#F5F5F7] font-bold text-base sm:text-lg truncate">{{ $user->nombre }}</h2>
+                            @if($user->es_verificado)
+                                <i class="fa-solid fa-circle-check text-[#7C5CFF] text-sm" title="Melómano verificado"></i>
+                            @endif
+                        </div>
+                        <div class="text-[#9A9AA5] text-xs sm:text-sm">{{ '@' . $user->handle }}</div>
                     </div>
-                    <div class="text-[#9A9AA5] text-xs sm:text-sm">{{ '@' . $user->handle }}</div>
+
+                    <!-- Botón para Salir/Cerrar Configuración -->
+                    <button type="button" 
+                            onclick="toggleProfileSettings()" 
+                            class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-[#FF3D57] bg-[#FF3D57]/10 border border-[#FF3D57]/30 hover:bg-[#FF3D57]/20 transition-all cursor-pointer shadow-sm"
+                            title="Volver al perfil">
+                        <i class="fa-solid fa-xmark text-xs sm:text-sm"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -218,8 +289,8 @@
     <!-- Contador de Estadísticas -->
     <div class="flex gap-0 mb-6 rounded-2xl overflow-hidden bg-[#0C0C13] border border-white/[0.06]">
         <div class="flex-1 text-center py-3 border-r border-white/[0.06]">
-            <div class="text-[#F5F5F7] font-bold text-base">{{ $showsCount ?? 0 }}</div>
-            <div class="text-xs text-[#9A9AA5]">Shows</div>
+            <div class="text-[#F5F5F7] font-bold text-base">{{ $blogsCount ?? $showsCount ?? 0 }}</div>
+            <div class="text-xs text-[#9A9AA5]">Blogs</div>
         </div>
         <button type="button" onclick="openSocialModal('siguiendo')" class="flex-1 text-center py-3 border-r border-white/[0.06] hover:bg-white/[0.03] transition-all cursor-pointer">
             <div class="text-[#F5F5F7] font-bold text-base" id="stat-following-count">{{ $followingCount }}</div>
@@ -231,25 +302,23 @@
         </button>
     </div>
 
-    <!-- Switcher de Pestañas (Solo si es perfil propio) -->
-    @if($isOwnProfile)
-        <div class="flex gap-1 mb-6 rounded-xl p-1 bg-[#0C0C13] border border-white/[0.06]">
-            <button type="button" 
-                    id="btn-tab-posts"
-                    onclick="switchProfileTab('posts')" 
-                    class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer {{ $isInitialEdit ? 'text-[#9A9AA5] hover:text-white' : 'bg-[#FF3D57] text-white shadow-[0_0_15px_rgba(255,61,87,0.35)]' }}">
-                Mis momentos
-            </button>
-            <button type="button" 
-                    id="btn-tab-editar"
-                    onclick="switchProfileTab('editar')" 
-                    class="flex-1 py-2.5 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer {{ $isInitialEdit ? 'bg-[#FF3D57] text-white shadow-[0_0_15px_rgba(255,61,87,0.35)]' : 'text-[#9A9AA5] hover:text-white' }}">
-                Editar perfil
-            </button>
-        </div>
-    @endif
+    <!-- Switcher de Pestañas (Momentos / Blogs) -->
+    <div class="flex gap-1 mb-6 rounded-2xl p-1.5 bg-[#0C0C13] border border-white/[0.06]">
+        <button type="button" 
+                id="btn-tab-posts"
+                onclick="switchProfileTab('posts')" 
+                class="flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer {{ $isInitialEdit ? 'text-[#9A9AA5] hover:text-white' : 'bg-[#FF3D57] text-white shadow-[0_0_15px_rgba(255,61,87,0.35)]' }}">
+            Posts
+        </button>
+        <button type="button" 
+                id="btn-tab-blogs"
+                onclick="switchProfileTab('blogs')" 
+                class="flex-1 py-3 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer text-[#9A9AA5] hover:text-white">
+            Blogs
+        </button>
+    </div>
 
-    <!-- Pestaña 1: Mis Momentos (Publicaciones) -->
+    <!-- Pestaña 1: Momentos (Publicaciones) -->
     <div id="tab-content-posts" class="{{ ($isOwnProfile && $isInitialEdit) ? 'hidden' : '' }} flex flex-col gap-4">
         @forelse($posts as $post)
             <x-post-card :post="$post" />
@@ -261,8 +330,16 @@
         @endforelse
     </div>
 
+    <!-- Pestaña 2: Blogs -->
+    <div id="tab-content-blogs" class="hidden flex flex-col gap-4">
+        <div class="text-center py-12 bg-[#0C0C13] rounded-2xl border border-white/[0.06]">
+            <i class="fa-solid fa-pen-nib text-3xl text-[#9A9AA5] mb-2"></i>
+            <p class="text-[#9A9AA5] text-sm">Aún no se han redactado blogs en esta cuenta.</p>
+        </div>
+    </div>
+
     @if($isOwnProfile)
-    <!-- Pestaña 2: Editar Perfil (Solo si es el propietario) -->
+    <!-- Pestaña 3: Editar Perfil (Acceso exclusivo por botón de tuerca) -->
     <div id="tab-content-editar" class="{{ $isInitialEdit ? '' : 'hidden' }} flex flex-col gap-5">
         <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-5">
             @csrf

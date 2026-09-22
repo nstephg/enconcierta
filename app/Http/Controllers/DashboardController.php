@@ -21,9 +21,14 @@ class DashboardController extends Controller
             $q->whereNull('parent_id');
         }])->latest('created_at')->get();
 
+        // Consulta optimizada para cargar la relación de seguimiento real y permitir melómanos verificados
         $suggestedUsers = User::where('id_usuario', '!=', Auth::id())
             ->where('id_rol', '!=', 2)
-            ->take(4)
+            ->withExists(['followers as is_following' => function ($q) {
+                $q->where('seguidores.id_seguidor', Auth::id());
+            }])
+            ->inRandomOrder()
+            ->take(5)
             ->get();
 
         return view('dashboard.feed', compact('posts', 'upcomingEvents', 'suggestedUsers'));
