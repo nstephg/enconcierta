@@ -1,52 +1,44 @@
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-[#0A0A0F]">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-[#0A0A0F]">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'ENCONCIERTA — Dashboard')</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>@yield('title', 'Dashboard — ENCONCIERTA')</title>
+
     <!-- Tailwind v4 CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Typography & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Emoji Mart Picker -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js"></script>
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @stack('styles')
 </head>
-<body class="h-full font-body text-[#F5F5F7] antialiased grain-overlay overflow-hidden">
-    <div class="flex h-screen bg-[#0A0A0F] overflow-hidden">
-        
-        @include('layouts.partials.dashboard-sidebar')
+<body class="min-h-screen min-h-[100dvh] antialiased bg-[#0A0A0F] text-[#F5F5F7] font-sans selection:bg-[#FF3D57] selection:text-white flex flex-col md:flex-row relative">
 
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            @include('layouts.partials.dashboard-header')
+    <!-- SIDEBAR DESKTOP -->
+    @include('layouts.partials.dashboard-sidebar')
 
-            <main class="flex-1 overflow-y-auto no-scrollbar" id="main-content">
-                @yield('content')
-            </main>
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen md:min-h-0 md:h-full overflow-y-auto pb-24 md:pb-0 relative">
+        @include('layouts.partials.dashboard-header')
 
-            <!-- Bottom Nav para Mobile -->
-            <nav class="flex md:hidden items-center justify-around px-2 py-2 flex-shrink-0 border-t border-white/5 bg-[#0A0A0F]/95 backdrop-blur-md">
-                <a href="{{ route('dashboard') }}" class="flex-1 flex flex-col items-center py-2 text-[#FF3D57]">
-                    <i class="fa-solid fa-house text-lg"></i>
-                </a>
-                <a href="#" class="flex-1 flex flex-col items-center py-2 text-[#9A9AA5] hover:text-white">
-                    <i class="fa-solid fa-compass text-lg"></i>
-                </a>
-                <button type="button" onclick="openCreatePostModal()" class="w-10 h-10 rounded-xl bg-[#FF3D57] text-white flex items-center justify-center shadow-[0_0_12px_rgba(255,61,87,0.4)]">
-                    <i class="fa-solid fa-plus text-base"></i>
-                </button>
-                <a href="#" class="flex-1 flex flex-col items-center py-2 text-[#9A9AA5] hover:text-white relative">
-                    <i class="fa-solid fa-comments text-lg"></i>
-                    <span class="absolute top-1 right-5 w-2 h-2 rounded-full bg-[#FF3D57]"></span>
-                </a>
-                <a href="#" class="flex-1 flex flex-col items-center py-2 text-[#9A9AA5] hover:text-white">
-                    <i class="fa-solid fa-user text-lg"></i>
-                </a>
-            </nav>
-        </div>
+        <main class="flex-1">
+            @yield('content')
+        </main>
     </div>
 
-    @stack('modals')
+    <!-- BARRA NAVEGACIÓN INFERIOR MÓVIL FIJA -->
+    @include('layouts.partials.dashboard-bottom-nav')
+
     @stack('scripts')
 </body>
 </html>

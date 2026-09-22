@@ -20,28 +20,31 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
+            $user = Auth::user();
+
+            $nextUrl = $user->perfil_completado ? route('dashboard') : route('profile.setup');
 
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => '¡Bienvenido de nuevo, ' . Auth::user()->nombre . '!',
-                    'redirect_url' => route('dashboard'),
-                    'user' => Auth::user()
+                    'message' => '¡Bienvenido de nuevo, ' . $user->nombre . '!',
+                    'redirect_url' => $nextUrl,
+                    'user' => $user
                 ]);
             }
 
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended($nextUrl);
         }
 
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Las credenciales proporcionadas son incorrectas.'
+                'message' => 'No existe una cuenta vinculada a este correo o la contraseña es incorrecta. Por favor regístrate primero.'
             ], 422);
         }
 
         return back()->withErrors([
-            'email' => 'Las credenciales proporcionadas son incorrectas.',
+            'email' => 'No existe una cuenta vinculada a este correo o la contraseña es incorrecta.',
         ])->onlyInput('email');
     }
 
@@ -58,6 +61,7 @@ class AuthController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'id_rol' => 1,
+            'perfil_completado' => false,
         ]);
 
         Auth::login($user);
@@ -65,13 +69,13 @@ class AuthController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => '¡Registro exitoso ' . $user->nombre . '! Tu cuenta ha sido creada.',
-                'redirect_url' => route('dashboard'),
+                'message' => '¡Registro exitoso ' . $user->nombre . '! Configura tu perfil a continuación.',
+                'redirect_url' => route('profile.setup'),
                 'user' => $user
             ]);
         }
 
-        return redirect()->route('dashboard');
+        return redirect()->route('profile.setup');
     }
 
     public function logout(Request $request)

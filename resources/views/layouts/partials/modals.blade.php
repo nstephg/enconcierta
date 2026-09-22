@@ -1,5 +1,5 @@
 <!-- MODAL: MATCHING WIZARD -->
-<div id="wizardModal" class="hidden fixed inset-0 z-50 items-center justify-center p-4 bg-[#0A0A0F]/85 backdrop-blur-md">
+<div id="wizardModal" class="hidden flex fixed inset-0 z-50 items-center justify-center p-4 bg-[#0A0A0F]/85 backdrop-blur-md">
     <div class="bg-[#17171F] border border-white/15 rounded-3xl max-w-lg w-full p-6 sm:p-8 relative shadow-2xl overflow-hidden">
         
         <button onclick="closeWizardModal()" class="absolute top-6 right-6 text-[#9A9AA5] hover:text-white text-lg p-2 cursor-pointer" aria-label="Cerrar modal">
@@ -78,7 +78,7 @@
 </div>
 
 <!-- MODAL: AUTH / REGISTRO -->
-<div id="authModal" class="hidden fixed inset-0 z-50 items-center justify-center p-3 sm:p-4 bg-[#0A0A0F]/85 backdrop-blur-xl transition-all duration-300">
+<div id="authModal" class="hidden flex fixed inset-0 z-50 items-center justify-center p-3 sm:p-4 bg-[#0A0A0F]/85 backdrop-blur-xl transition-all duration-300">
     
     <!-- Modal Card Container -->
     <div class="bg-[#17171F] border border-white/15 rounded-3xl max-w-md w-full p-6 sm:p-8 relative shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col justify-between" style="box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 30px rgba(124, 92, 255, 0.15);">

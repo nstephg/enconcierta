@@ -1,55 +1,111 @@
+import './compose.js';
+import './post-detail.js';
+import './profile.js';
+
 let selectedShowForSync = null;
 
+// 1. MANEJO DE TRANSPARENCIA Y NAVEGACIÓN DEL HEADER
 window.addEventListener("scroll", function() {
     const header = document.getElementById("mainHeader");
     if (!header) return;
-    if (window.scrollY > 40) {
+    if (window.scrollY > 20) {
         header.classList.remove("bg-transparent", "border-transparent");
-        header.classList.add("bg-[#0A0A0F]/85", "border-white/5", "backdrop-blur-md", "shadow-xl");
+        header.classList.add("bg-[#0A0A0F]/95", "border-white/10", "backdrop-blur-md", "shadow-xl");
     } else {
         header.classList.add("bg-transparent", "border-transparent");
-        header.classList.remove("bg-[#0A0A0F]/85", "border-white/5", "backdrop-blur-md", "shadow-xl");
+        header.classList.remove("bg-[#0A0A0F]/95", "border-white/10", "backdrop-blur-md", "shadow-xl");
     }
 });
 
+// 2. FUNCIÓN UNIFICADA DE MENÚ MÓVIL
 window.toggleMobileMenu = function() {
-    document.getElementById("mobileDrawer").classList.toggle("hidden");
+    const drawer = document.getElementById("mobileDrawer");
+    const icon = document.getElementById("mobileMenuIcon");
+    const header = document.getElementById("mainHeader");
+    if (!drawer) return;
+
+    drawer.style.removeProperty('display');
+    const isHidden = drawer.classList.toggle("hidden");
+
+    // Bloquear scroll del cuerpo cuando el menú está abierto
+    document.body.classList.toggle("overflow-hidden", !isHidden);
+
+    if (header) {
+        // Desactivar temporalmente la transición CSS para que el cambio de color sea instantáneo
+        header.style.transition = 'none';
+
+        if (!isHidden) {
+            header.classList.add("bg-[#0A0A0F]", "border-white/10");
+            header.classList.remove("bg-transparent", "border-transparent");
+        } else if (window.scrollY <= 20) {
+            header.classList.remove("bg-[#0A0A0F]", "border-white/10");
+            header.classList.add("bg-transparent", "border-transparent");
+        }
+
+        // Restablecer la transición fluida para el scroll normal en el siguiente frame
+        setTimeout(() => {
+            header.style.transition = '';
+        }, 50);
+    }
+
+    if (icon) {
+        if (isHidden) {
+            icon.classList.remove("fa-xmark");
+            icon.classList.add("fa-bars");
+        } else {
+            icon.classList.remove("fa-bars");
+            icon.classList.add("fa-xmark");
+        }
+    }
 };
 
+// 3. WIZARD MODAL PARCHE
 window.openWizardModal = function() {
-    document.getElementById("wizardModal").classList.remove("hidden");
-    window.nextWizardStep(1);
+    const modal = document.getElementById("wizardModal");
+    if (modal) {
+        modal.classList.remove("hidden");
+        window.nextWizardStep(1);
+    }
 };
 
 window.closeWizardModal = function() {
-    document.getElementById("wizardModal").classList.add("hidden");
+    const modal = document.getElementById("wizardModal");
+    if (modal) modal.classList.add("hidden");
 };
 
 window.nextWizardStep = function(step) {
-    document.getElementById("wizardStepNum").innerText = step;
-    document.getElementById("wizardStep1").classList.add("hidden");
-    document.getElementById("wizardStep2").classList.add("hidden");
-    document.getElementById("wizardStep3").classList.add("hidden");
+    const num = document.getElementById("wizardStepNum");
+    const title = document.getElementById("wizardTitle");
+    const s1 = document.getElementById("wizardStep1");
+    const s2 = document.getElementById("wizardStep2");
+    const s3 = document.getElementById("wizardStep3");
+
+    if (num) num.innerText = step;
+    if (s1) s1.classList.add("hidden");
+    if (s2) s2.classList.add("hidden");
+    if (s3) s3.classList.add("hidden");
 
     if (step === 1) {
-        document.getElementById("wizardTitle").innerText = "¿A cuál show vas a asistir?";
-        document.getElementById("wizardStep1").classList.remove("hidden");
+        if (title) title.innerText = "¿A cuál show vas a asistir?";
+        if (s1) s1.classList.remove("hidden");
     } else if (step === 2) {
-        document.getElementById("wizardTitle").innerText = "¿Cómo prefieres vivir la previa?";
-        document.getElementById("wizardStep2").classList.remove("hidden");
+        if (title) title.innerText = "¿Cómo prefieres vivir la previa?";
+        if (s2) s2.classList.remove("hidden");
     } else if (step === 3) {
-        document.getElementById("wizardTitle").innerText = "Sintonización Completa";
-        document.getElementById("wizardStep3").classList.remove("hidden");
+        if (title) title.innerText = "Sintonización Completa";
+        if (s3) s3.classList.remove("hidden");
     }
 };
 
 window.selectVibeOption = function(btn, vibeName) {
     document.querySelectorAll(".vibe-opt").forEach(b => {
         b.classList.remove("border-[#7C5CFF]", "bg-[#7C5CFF]/10");
-        b.querySelector(".fa-circle-check").classList.add("opacity-0");
+        const icon = b.querySelector(".fa-circle-check");
+        if (icon) icon.classList.add("opacity-0");
     });
     btn.classList.add("border-[#7C5CFF]", "bg-[#7C5CFF]/10");
-    btn.querySelector(".fa-circle-check").classList.remove("opacity-0");
+    const icon = btn.querySelector(".fa-circle-check");
+    if (icon) icon.classList.remove("opacity-0");
 };
 
 window.confirmJoinParche = function() {
@@ -57,19 +113,24 @@ window.confirmJoinParche = function() {
     window.showToast("¡Te has sincronizado con éxito al parche!");
 };
 
+// 4. SYNC MODAL
 window.openSyncModal = function(showTitle) {
     selectedShowForSync = showTitle;
-    document.getElementById("syncModalShowTitle").innerText = showTitle;
-    document.getElementById("syncModal").classList.remove("hidden");
+    const title = document.getElementById("syncModalShowTitle");
+    const modal = document.getElementById("syncModal");
+    if (title) title.innerText = showTitle;
+    if (modal) modal.classList.remove("hidden");
 };
 
 window.closeSyncModal = function() {
-    document.getElementById("syncModal").classList.add("hidden");
+    const modal = document.getElementById("syncModal");
+    if (modal) modal.classList.add("hidden");
 };
 
 window.submitSyncForm = function() {
-    const name = document.getElementById("syncNameInput").value;
-    if(!name) {
+    const input = document.getElementById("syncNameInput");
+    const name = input ? input.value : null;
+    if (!name) {
         window.showToast("Por favor ingresa tu apodo melómano");
         return;
     }
@@ -77,12 +138,15 @@ window.submitSyncForm = function() {
     window.showToast(`¡Genial ${name}! Te uniste al parche de ${selectedShowForSync}`);
 };
 
+// 5. AUTH MODAL
 window.openAuthModal = function() {
-    document.getElementById("authModal").classList.remove("hidden");
+    const modal = document.getElementById("authModal");
+    if (modal) modal.classList.remove("hidden");
 };
 
 window.closeAuthModal = function() {
-    document.getElementById("authModal").classList.add("hidden");
+    const modal = document.getElementById("authModal");
+    if (modal) modal.classList.add("hidden");
 };
 
 window.switchAuthTab = function(tab) {
@@ -114,7 +178,7 @@ window.switchAuthTab = function(tab) {
 
 window.togglePassword = function(inputId, btn) {
     const input = document.getElementById(inputId);
-    const icon = btn.querySelector("i");
+    const icon = btn ? btn.querySelector("i") : null;
     if (!input || !icon) return;
 
     if (input.type === "password") {
@@ -146,10 +210,8 @@ window.submitLogin = async function(e) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            window.showToast(data.message);
-            setTimeout(() => {
-                window.location.href = data.redirect_url || '/dashboard';
-            }, 800);
+            // Redirección inmediata sin toast ni delay
+            window.location.href = data.redirect_url || '/dashboard';
         } else {
             let errorMsg = data.message || 'Error al iniciar sesión';
             if (data.errors) {
@@ -181,10 +243,8 @@ window.submitRegister = async function(e) {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            window.showToast(data.message);
-            setTimeout(() => {
-                window.location.href = data.redirect_url || '/dashboard';
-            }, 800);
+            // Redirección inmediata sin toast ni delay
+            window.location.href = data.redirect_url || '/dashboard';
         } else {
             let errorMsg = data.message || 'Error en el registro';
             if (data.errors) {
@@ -198,34 +258,7 @@ window.submitRegister = async function(e) {
     }
 };
 
-window.handleSocialAuth = function(provider) {
-    window.showToast(`Sincronizando con ${provider}...`);
-    setTimeout(window.closeAuthModal, 1200);
-};
-
-window.forgotPassword = function(e) {
-    e.preventDefault();
-    window.showToast("Te hemos enviado un enlace para restablecer tu contraseña.");
-};
-
-window.showTermsNotice = function(e) {
-    e.preventDefault();
-    window.showToast("Términos y condiciones de ENCONCIERTA.");
-};
-
-window.reactPost = function(btn) {
-    const countEl = btn.querySelector(".like-count");
-    let count = parseInt(countEl.innerText);
-    if(btn.classList.contains("liked")) {
-        btn.classList.remove("liked");
-        countEl.innerText = count - 1;
-    } else {
-        btn.classList.add("liked");
-        countEl.innerText = count + 1;
-        window.showToast("¡Te identificaste con este recuerdo!");
-    }
-};
-
+// 6. TOAST NOTIFICACIONES
 let toastTimeout = null;
 
 window.showToast = function(msg) {
@@ -249,12 +282,8 @@ window.showToast = function(msg) {
     }, 3000);
 };
 
+// 7. INICIALIZACIÓN AL CARGAR DOM
 document.addEventListener("DOMContentLoaded", () => {
-    const mobileMenuBtn = document.getElementById("mobileMenuBtn");
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener("click", window.toggleMobileMenu);
-    }
-
     const authModal = document.getElementById("authModal");
     if (authModal) {
         authModal.addEventListener("click", function(e) {
@@ -309,20 +338,3 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     animateFrequency();
 });
-
-window.toggleMobileDrawer = function() {
-    const sidebar = document.getElementById('sidebar-menu');
-    sidebar.classList.toggle('hidden');
-    sidebar.classList.toggle('fixed');
-    sidebar.classList.toggle('inset-0');
-    sidebar.classList.toggle('z-50');
-};
-
-window.toggleNotifications = function() {
-    console.log('Notificaciones toggle');
-};
-
-window.openCreatePostModal = function() {
-    const textarea = document.querySelector('textarea[name="contenido"]');
-    if (textarea) textarea.focus();
-};

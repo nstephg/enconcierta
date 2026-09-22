@@ -6,7 +6,7 @@
 
 @section('content')
 <!-- HERO SECTION WITH BACKGROUND IMAGE -->
-<section class="relative pt-28 pb-20 md:pt-36 md:pb-32 overflow-hidden min-h-[88vh] flex items-center justify-center">
+<section class="relative pt-24 pb-16 md:pt-36 md:pb-32 overflow-hidden min-h-[85vh] flex items-center justify-center">
     <div class="absolute inset-0 z-0 pointer-events-none">
         <img src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=1800&h=1200&fit=crop&auto=format" alt="Multitud en concierto" class="w-full h-full object-cover opacity-50">
         <div class="absolute inset-0 bg-linear-to-b from-[#0A0A0F]/80 via-[#0A0A0F]/65 to-[#0A0A0F]"></div>
@@ -14,42 +14,42 @@
         <div class="absolute inset-0 bg-[radial-gradient(ellipse_40%_50%_at_80%_40%,rgba(124,92,255,0.18)_0%,transparent_70%)]"></div>
     </div>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full overflow-hidden">
         <div class="max-w-4xl mx-auto text-center flex flex-col items-center">
-            <h1 class="font-headline text-4xl sm:text-6xl md:text-7xl lg:text-8xl uppercase tracking-tight text-white leading-[0.95] mb-6">
+            <h1 class="font-headline text-3xl sm:text-6xl md:text-7xl lg:text-8xl uppercase tracking-tight text-white leading-[1.0] sm:leading-[0.95] mb-6">
                 NO DEJES QUE TU BANDA FAVORITA <br class="hidden sm:inline"/>
                 <span class="text-transparent bg-clip-text bg-linear-to-r from-[#FF3D57] via-[#FFB020] to-[#7C5CFF]">
                     TOQUE SIN TI.
                 </span>
             </h1>
 
-            <p class="text-lg sm:text-xl md:text-2xl text-[#9A9AA5] max-w-2xl font-light mb-10 leading-relaxed">
+            <p class="text-base sm:text-xl md:text-2xl text-[#9A9AA5] max-w-2xl font-light mb-8 sm:mb-10 leading-relaxed">
                 Encuentra tu parche y vive el show desde la previa.
             </p>
 
-            <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto mb-12">
-                <button onclick="openWizardModal()" class="w-full sm:w-auto bg-[#FF3D57] hover:bg-[#FF3D57]/90 text-white font-bold text-base px-8 py-4 rounded-full transition-all duration-300 glow-primary-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-3 cursor-pointer group">
+            <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 w-full sm:w-auto mb-10">
+                <button onclick="openWizardModal()" class="w-full sm:w-auto bg-[#FF3D57] hover:bg-[#FF3D57]/90 text-white font-bold text-sm sm:text-base px-8 py-4 rounded-full transition-all duration-300 glow-primary-lg hover:scale-105 active:scale-95 flex items-center justify-center gap-3 cursor-pointer group">
                     <span>Enconcierta tu parche</span>
                     <i class="fa-solid fa-arrow-right text-sm group-hover:translate-x-1 transition-transform"></i>
                 </button>
 
-                <a href="#shows-section" class="w-full sm:w-auto bg-[#17171F]/80 hover:bg-[#232330] text-[#F5F5F7] border border-white/15 font-semibold text-base px-8 py-4 rounded-full transition-all duration-300 hover:border-white/30 backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer">
+                <a href="#shows-section" class="w-full sm:w-auto bg-[#17171F]/80 hover:bg-[#232330] text-[#F5F5F7] border border-white/15 font-semibold text-sm sm:text-base px-8 py-4 rounded-full transition-all duration-300 hover:border-white/30 backdrop-blur-md flex items-center justify-center gap-2 cursor-pointer">
                     <span>Explorar shows</span>
                     <i class="fa-solid fa-ticket text-xs text-[#FF3D57]"></i>
                 </a>
             </div>
 
-            <div class="flex items-center gap-4 bg-[#17171F]/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/10">
-                <div class="flex -space-x-2">
-                    <img class="w-8 h-8 rounded-full border-2 border-[#0A0A0F] object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Melómana Valentina">
-                    <img class="w-8 h-8 rounded-full border-2 border-[#0A0A0F] object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80" alt="Melómano Mateo">
-                    <img class="w-8 h-8 rounded-full border-2 border-[#0A0A0F] object-cover" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80" alt="Melómana Camila">
-                    <div class="w-8 h-8 rounded-full border-2 border-[#0A0A0F] bg-[#7C5CFF] text-white text-[10px] font-bold flex items-center justify-center">
+            <div class="flex items-center gap-3 sm:gap-4 bg-[#17171F]/80 backdrop-blur-md px-4 sm:px-6 py-3 rounded-full border border-white/10 max-w-full">
+                <div class="flex -space-x-2 flex-shrink-0">
+                    <img class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#0A0A0F] object-cover" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" alt="Melómana Valentina">
+                    <img class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#0A0A0F] object-cover" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80" alt="Melómano Mateo">
+                    <img class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#0A0A0F] object-cover" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80" alt="Melómana Camila">
+                    <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-[#0A0A0F] bg-[#7C5CFF] text-white text-[10px] font-bold flex items-center justify-center">
                         +2.4k
                     </div>
                 </div>
-                <span class="text-xs sm:text-sm text-[#9A9AA5] font-medium">
-                    <strong class="text-white">+2.400 melómanos</strong> ya sincronizados en Bogotá, Medellín y Cali
+                <span class="text-xs sm:text-sm text-[#9A9AA5] font-medium text-left truncate">
+                    <strong class="text-white">+2.400 melómanos</strong> sincronizados
                 </span>
             </div>
         </div>
@@ -57,34 +57,27 @@
 </section>
 
 <!-- INFINITE MARQUEE TICKER STRIP -->
-<section class="overflow-hidden py-0 relative z-20 border-y border-[#FF3D57]/20 bg-[#0C0C13]">
+<section class="overflow-hidden py-0 relative z-20 border-y border-[#FF3D57]/20 bg-[#0C0C13] w-full">
     <div class="flex marquee-track w-max">
         @for ($i = 0; $i < 4; $i++)
             <div class="flex items-center gap-0 shrink-0">
-                <div class="flex items-baseline gap-3 px-10 py-5">
-                    <span class="font-headline text-3xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">120+</span>
-                    <span class="text-[#9A9AA5] text-xs font-semibold tracking-widest uppercase">SHOWS ACTIVOS</span>
+                <div class="flex items-baseline gap-2 sm:gap-3 px-6 sm:px-10 py-4 sm:py-5">
+                    <span class="font-headline text-2xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">120+</span>
+                    <span class="text-[#9A9AA5] text-[10px] sm:text-xs font-semibold tracking-widest uppercase">SHOWS ACTIVOS</span>
                 </div>
                 <span class="text-[#FF3D57]/35 text-[8px] shrink-0">◆</span>
             </div>
             <div class="flex items-center gap-0 shrink-0">
-                <div class="flex items-baseline gap-3 px-10 py-5">
-                    <span class="font-headline text-3xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">2.400+</span>
-                    <span class="text-[#9A9AA5] text-xs font-semibold tracking-widest uppercase">MELÓMANOS</span>
+                <div class="flex items-baseline gap-2 sm:gap-3 px-6 sm:px-10 py-4 sm:py-5">
+                    <span class="font-headline text-2xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">2.400+</span>
+                    <span class="text-[#9A9AA5] text-[10px] sm:text-xs font-semibold tracking-widest uppercase">MELÓMANOS</span>
                 </div>
                 <span class="text-[#FF3D57]/35 text-[8px] shrink-0">◆</span>
             </div>
             <div class="flex items-center gap-0 shrink-0">
-                <div class="flex items-baseline gap-3 px-10 py-5">
-                    <span class="font-headline text-3xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">35</span>
-                    <span class="text-[#9A9AA5] text-xs font-semibold tracking-widest uppercase">CIUDADES</span>
-                </div>
-                <span class="text-[#FF3D57]/35 text-[8px] shrink-0">◆</span>
-            </div>
-            <div class="flex items-center gap-0 shrink-0">
-                <div class="flex items-baseline gap-3 px-10 py-5">
-                    <span class="font-headline text-3xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">4.8★</span>
-                    <span class="text-[#9A9AA5] text-xs font-semibold tracking-widest uppercase">CONFIANZA</span>
+                <div class="flex items-baseline gap-2 sm:gap-3 px-6 sm:px-10 py-4 sm:py-5">
+                    <span class="font-headline text-2xl sm:text-4xl text-[#FF3D57] tracking-wider leading-none">35</span>
+                    <span class="text-[#9A9AA5] text-[10px] sm:text-xs font-semibold tracking-widest uppercase">CIUDADES</span>
                 </div>
                 <span class="text-[#FF3D57]/35 text-[8px] shrink-0">◆</span>
             </div>
