@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Publicacion;
 use App\Models\Participacion;
 use App\Models\User;
+use App\Models\Blog;
 
 class ProfileController extends Controller
 {
@@ -80,11 +81,18 @@ class ProfileController extends Controller
         /** @var \App\Models\User $user */
         $user = $id ? User::findOrFail($id) : Auth::user();
         $authUserId = Auth::id();
+        $isOwnProfile = $authUserId && $authUserId == $user->id_usuario;
 
         // Cargar publicaciones creadas por el usuario objetivo
         $posts = Publicacion::with(['evento', 'likes'])
             ->where('id_usuario', $user->id_usuario)
             ->orderBy('fecha', 'desc')
+            ->get();
+
+        // Cargar blogs creados por el usuario objetivo
+        $blogs = $user->blogs()
+            ->select(['id_blog', 'id_usuario', 'titulo', 'subtitulo', 'portada', 'vistas', 'created_at'])
+            ->latest()
             ->get();
 
         // Conteo seguro de shows
@@ -145,7 +153,16 @@ class ProfileController extends Controller
             ? 'profile.show' 
             : (view()->exists('profile.profile') ? 'profile.profile' : 'profile');
 
-        return view($viewName, compact('user', 'posts', 'showsCount', 'followingList', 'followersList', 'isFollowingAuthor'));
+        return view($viewName, compact(
+            'user', 
+            'posts', 
+            'blogs',
+            'showsCount', 
+            'followingList', 
+            'followersList', 
+            'isFollowingAuthor',
+            'isOwnProfile'
+        ));
     }
 
     /**

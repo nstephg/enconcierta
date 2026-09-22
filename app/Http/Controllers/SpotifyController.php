@@ -26,13 +26,17 @@ class SpotifyController extends Controller
         }
 
         $code = $request->query('code');
+        if (!$code) {
+            return redirect()->route('profile.show')->with('error', 'Código de autorización no recibido.');
+        }
+
         $tokenData = $this->spotifyService->getAccessToken($code);
 
-        if (!$tokenData) {
+        if (!$tokenData || !isset($tokenData['access_token'])) {
             return redirect()->route('profile.show')->with('error', 'Error al obtener el token de Spotify.');
         }
 
-        // Obtener el perfil real de Spotify
+        // Obtener el perfil de Spotify
         $spotifyProfile = $this->spotifyService->getUserProfile($tokenData['access_token']);
 
         if ($spotifyProfile) {
@@ -45,7 +49,7 @@ class SpotifyController extends Controller
         session([
             'spotify_access_token' => $tokenData['access_token'],
             'spotify_refresh_token' => $tokenData['refresh_token'] ?? null,
-            'spotify_token_expires_at' => now()->addSeconds($tokenData['expires_in']),
+            'spotify_token_expires_at' => now()->addSeconds($tokenData['expires_in'] ?? 3600),
         ]);
 
         return redirect()->route('profile.show')->with('success', 'Conectado con Spotify correctamente.');

@@ -289,7 +289,7 @@
     <!-- Contador de Estadísticas -->
     <div class="flex gap-0 mb-6 rounded-2xl overflow-hidden bg-[#0C0C13] border border-white/[0.06]">
         <div class="flex-1 text-center py-3 border-r border-white/[0.06]">
-            <div class="text-[#F5F5F7] font-bold text-base">{{ $blogsCount ?? $showsCount ?? 0 }}</div>
+            <div class="text-[#F5F5F7] font-bold text-base">{{ count($blogs ?? []) }}</div>
             <div class="text-xs text-[#9A9AA5]">Blogs</div>
         </div>
         <button type="button" onclick="openSocialModal('siguiendo')" class="flex-1 text-center py-3 border-r border-white/[0.06] hover:bg-white/[0.03] transition-all cursor-pointer">
@@ -332,10 +332,49 @@
 
     <!-- Pestaña 2: Blogs -->
     <div id="tab-content-blogs" class="hidden flex flex-col gap-4">
-        <div class="text-center py-12 bg-[#0C0C13] rounded-2xl border border-white/[0.06]">
-            <i class="fa-solid fa-pen-nib text-3xl text-[#9A9AA5] mb-2"></i>
-            <p class="text-[#9A9AA5] text-sm">Aún no se han redactado blogs en esta cuenta.</p>
-        </div>
+        @forelse($blogs as $blog)
+            @php
+                $blogCover = !empty($blog->portada) 
+                    ? (str_starts_with($blog->portada, 'http') ? $blog->portada : asset('storage/' . $blog->portada))
+                    : 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=700&h=400&fit=crop&auto=format';
+            @endphp
+            <article class="rounded-2xl overflow-hidden group transition-all hover:brightness-110 bg-[#0C0C13] border border-white/[0.06]">
+                <a href="{{ route('blogs.show', $blog->id_blog) }}" class="block">
+                    <div class="relative overflow-hidden h-44">
+                        <img src="{{ $blogCover }}" alt="{{ $blog->titulo }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#0C0C13] via-[#0C0C13]/40 to-transparent"></div>
+                        <div class="absolute bottom-0 left-0 right-0 px-5 pb-4">
+                            <h3 class="font-bold text-[#F5F5F7] text-lg sm:text-xl leading-tight truncate">{{ $blog->titulo }}</h3>
+                        </div>
+                        <div class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#FF3D57] text-white shadow-[0_0_10px_rgba(255,61,87,0.4)]">
+                            Blog
+                        </div>
+                    </div>
+                    <div class="px-5 py-4">
+                        @if($blog->subtitulo)
+                            <p class="text-[#9A9AA5] text-sm leading-relaxed mb-3 line-clamp-2">{{ $blog->subtitulo }}</p>
+                        @endif
+                        <div class="flex items-center gap-3 text-[#9A9AA5] text-xs">
+                            <span>{{ $blog->created_at ? $blog->created_at->format('d M Y') : 'Reciente' }}</span>
+                            <span>·</span>
+                            <span><i class="fa-regular fa-eye mr-1"></i>{{ $blog->vistas ?? 0 }} lecturas</span>
+                        </div>
+                    </div>
+                </a>
+            </article>
+        @empty
+            <div class="text-center py-12 bg-[#0C0C13] rounded-2xl border border-white/[0.06]">
+                <i class="fa-solid fa-pen-nib text-3xl text-[#9A9AA5] mb-2"></i>
+                <p class="text-[#9A9AA5] text-sm">Aún no se han redactado blogs en esta cuenta.</p>
+            </div>
+        @endforelse
+
+        @if($isOwnProfile)
+            <a href="{{ route('blogs.create') }}" class="flex items-center justify-center gap-2 py-4 rounded-2xl text-xs sm:text-sm font-bold tracking-wider uppercase transition-all bg-[#FF3D57]/10 text-[#FF3D57] border border-dashed border-[#FF3D57]/30 hover:bg-[#FF3D57]/20 cursor-pointer">
+                <i class="fa-solid fa-plus"></i>
+                <span>Escribir nuevo blog</span>
+            </a>
+        @endif
     </div>
 
     @if($isOwnProfile)

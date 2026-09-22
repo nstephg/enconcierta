@@ -1,39 +1,62 @@
+@props(['blog' => null])
+
+@php
+    $estilos = is_array($blog->estilos ?? null) 
+        ? $blog->estilos 
+        : json_decode($blog->estilos ?? '{}', true);
+
+    $blocks = is_array($blog->contenido ?? null) 
+        ? $blog->contenido 
+        : json_decode($blog->contenido ?? '[]', true);
+
+    if (empty($blocks)) {
+        $blocks = [
+            ['id' => 'b1', 'type' => 'text', 'content' => '', 'color' => null, 'bg' => null, 'fontSize' => 16, 'align' => 'left', 'bold' => false, 'italic' => false, 'font' => '', 'x' => 0, 'y' => 0, 'w' => '100%', 'h' => 'auto']
+        ];
+    }
+
+    $coverUrl = !empty($blog->portada) 
+        ? (str_starts_with($blog->portada, 'http') ? $blog->portada : asset('storage/' . $blog->portada))
+        : null;
+@endphp
+
 <!-- Carga de Alpine.js e Interact JS -->
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 
 <div 
     x-data="{
-        title: '',
-        subtitle: '',
-        coverImg: null,
-        showArtist: '',
-        showVenue: '',
+        isEditing: @js($blog !== null),
+        title: @js($blog->titulo ?? ''),
+        subtitle: @js($blog->subtitulo ?? ''),
+        coverImg: @js($coverUrl),
+        showArtist: @js($blog->artista ?? ''),
+        showVenue: @js($blog->venue ?? ''),
         published: false,
         
         // Estilos del Lienzo
-        globalFont: 'Inter, sans-serif',
-        canvasWidth: '780px',
-        canvasPadding: 'py-10 px-6 sm:px-16',
-        bgType: 'solid',
-        bgColor: '#0A0A0F',
-        bgGrad: 'linear-gradient(135deg,#0A0A0F 0%,#1a0a2e 100%)',
+        globalFont: @js($estilos['globalFont'] ?? 'Inter, sans-serif'),
+        canvasWidth: @js($estilos['canvasWidth'] ?? '780px'),
+        canvasPadding: 'py-10 px-4 sm:px-16',
+        bgType: @js($estilos['bgType'] ?? 'solid'),
+        bgColor: @js($estilos['bgColor'] ?? '#0A0A0F'),
+        bgGrad: @js($estilos['bgGrad'] ?? 'linear-gradient(135deg,#0A0A0F 0%,#1a0a2e 100%)'),
         bgImg: null,
-        bgOverlayOpacity: 40,
-        bgBlur: 0,
-        textColor: '#F5F5F7',
-        titleColor: '#F5F5F7',
+        bgOverlayOpacity: @js($estilos['bgOverlayOpacity'] ?? 40),
+        bgBlur: @js($estilos['bgBlur'] ?? 0),
+        textColor: @js($estilos['textColor'] ?? '#F5F5F7'),
+        titleColor: @js($estilos['titleColor'] ?? '#F5F5F7'),
         
-        // Sombra de Título (Desactivada por defecto)
-        enableTitleShadow: false,
-        shadowX: 0,
-        shadowY: 10,
-        shadowBlur: 20,
-        shadowColor: 'rgba(0,0,0,0.6)',
+        // Sombra de Título
+        enableTitleShadow: @js(!empty($estilos['titleShadowStyle']) && $estilos['titleShadowStyle'] !== 'none'),
+        shadowX: @js($estilos['shadowX'] ?? 0),
+        shadowY: @js($estilos['shadowY'] ?? 10),
+        shadowBlur: @js($estilos['shadowBlur'] ?? 20),
+        shadowColor: @js($estilos['shadowColor'] ?? 'rgba(0,0,0,0.6)'),
 
-        canvasAccentColor: '#FF3D57',
-        lineHeight: '1.6',
-        letterSpacing: '0px',
+        canvasAccentColor: @js($estilos['canvasAccentColor'] ?? '#FF3D57'),
+        lineHeight: @js($estilos['lineHeight'] ?? '1.6'),
+        letterSpacing: @js($estilos['letterSpacing'] ?? '0px'),
 
         // Estado e Interactividad
         showPanel: true,
@@ -42,10 +65,8 @@
         pendingMediaId: null,
         editingTextId: null,
 
-        // Bloques Dinámicos Libres
-        blocks: [
-            { id: 'b1', type: 'text', content: '', color: null, bg: null, fontSize: 16, align: 'left', bold: false, italic: false, font: '', x: 0, y: 0, w: '100%', h: '100px' }
-        ],
+        // Bloques Dinámicos Libres Cargados
+        blocks: @js($blocks),
 
         fonts: [
             { id: 'inter', label: 'Inter (Sans)', css: 'Inter, sans-serif' },
@@ -109,7 +130,8 @@
             this.$nextTick(() => {
                 interact('.transform-block').draggable({
                     inertia: false,
-                    ignoreFrom: 'textarea:read-write, input:read-write',
+                    autoScroll: true,
+                    ignoreFrom: 'textarea:read-write, input:read-write, button',
                     listeners: {
                         move: (event) => {
                             const target = event.target;
@@ -124,15 +146,15 @@
                     }
                 }).resizable({
                     edges: { left: true, right: true, bottom: true, top: true },
-                    margin: 8,
+                    margin: 16, // Zona de detección de bordes más amplia para pantallas táctiles
                     listeners: {
                         move: (event) => {
                             const target = event.target;
                             const id = target.getAttribute('data-id');
                             const block = this.blocks.find(b => b.id === id);
                             if (block) {
-                                block.w = Math.max(100, event.rect.width) + 'px';
-                                block.h = Math.max(40, event.rect.height) + 'px';
+                                block.w = Math.max(80, event.rect.width) + 'px';
+                                block.h = Math.max(30, event.rect.height) + 'px';
                                 block.x = (block.x || 0) + event.deltaRect.left;
                                 block.y = (block.y || 0) + event.deltaRect.top;
                             }
@@ -158,10 +180,65 @@
                 x: 0,
                 y: this.blocks.length * 30,
                 w: type === 'media' ? '320px' : '100%',
-                h: type === 'media' ? '220px' : 'auto'
+                h: 'auto'
             };
             this.blocks.push(newBlock);
             this.activeId = id;
+            this.initTransformables();
+        },
+
+        addMediaBlock(src) {
+            const id = 'b_' + Date.now();
+            const newBlock = { 
+                id: id, 
+                type: 'media', 
+                content: src, 
+                color: null, 
+                bg: null, 
+                fontSize: 16, 
+                align: 'left', 
+                bold: false, 
+                italic: false, 
+                font: '',
+                x: 0,
+                y: this.blocks.length * 30,
+                w: '320px',
+                h: '220px',
+                mediaType: 'image'
+            };
+
+            this.blocks.push(newBlock);
+            this.activeId = id;
+
+            if (src) {
+                const img = new Image();
+                img.referrerPolicy = 'no-referrer';
+                img.onload = () => {
+                    const target = this.blocks.find(b => b.id === id);
+                    if (target) {
+                        let w = img.naturalWidth || 320;
+                        let h = img.naturalHeight || 220;
+                        const maxCanvasW = parseInt(this.canvasWidth) || 780;
+                        
+                        if (w > maxCanvasW) {
+                            h = Math.round((h * maxCanvasW) / w);
+                            w = maxCanvasW;
+                        }
+
+                        target.w = w + 'px';
+                        target.h = h + 'px';
+                    }
+                };
+                img.onerror = () => {
+                    const target = this.blocks.find(b => b.id === id);
+                    if (target) {
+                        target.w = '320px';
+                        target.h = '220px';
+                    }
+                };
+                img.src = src;
+            }
+
             this.initTransformables();
         },
 
@@ -230,14 +307,119 @@
             if (file && this.pendingMediaId) {
                 const b = this.blocks.find(x => x.id === this.pendingMediaId);
                 if (b) {
-                    b.content = URL.createObjectURL(file);
-                    b.mediaType = file.type.startsWith('video') ? 'video' : 'image';
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        b.content = event.target.result;
+                        const isVideo = file.type.startsWith('video');
+                        b.mediaType = isVideo ? 'video' : 'image';
+
+                        if (!isVideo) {
+                            const img = new Image();
+                            img.onload = () => {
+                                let w = img.naturalWidth || 320;
+                                let h = img.naturalHeight || 220;
+                                const maxCanvasW = parseInt(this.canvasWidth) || 780;
+                                if (w > maxCanvasW) {
+                                    h = Math.round((h * maxCanvasW) / w);
+                                    w = maxCanvasW;
+                                }
+                                b.w = w + 'px';
+                                b.h = h + 'px';
+                            };
+                            img.src = event.target.result;
+                        }
+                    };
+                    reader.readAsDataURL(file);
                 }
                 this.pendingMediaId = null;
             }
+        },
+
+        handlePaste(e) {
+            const activeElem = document.activeElement;
+            const isEditingText = activeElem && (activeElem.tagName === 'INPUT' || activeElem.tagName === 'TEXTAREA');
+            const clipboardData = e.clipboardData || window.clipboardData;
+            if (!clipboardData) return;
+
+            let imageUrl = null;
+
+            const htmlData = clipboardData.getData('text/html');
+            if (htmlData) {
+                const doc = new DOMParser().parseFromString(htmlData, 'text/html');
+                const nodes = Array.from(doc.querySelectorAll('img, source'));
+                for (const node of nodes) {
+                    if (node.classList && (node.classList.contains('overlay') || node.getAttribute('aria-hidden') === 'true')) continue;
+
+                    let candidates = [
+                        node.getAttribute('data-src'),
+                        node.getAttribute('data-original'),
+                        node.getAttribute('srcset'),
+                        node.getAttribute('src') || node.src
+                    ].filter(Boolean);
+
+                    for (let candidate of candidates) {
+                        if (candidate.includes(',')) {
+                            const parts = candidate.split(',').map(p => p.trim().split(' ')[0]).filter(Boolean);
+                            candidate = parts[parts.length - 1];
+                        }
+
+                        let cleanUrl = candidate.trim();
+                        if (cleanUrl && !cleanUrl.startsWith('data:') && !cleanUrl.includes('1x1') && !cleanUrl.includes('transparent') && !cleanUrl.includes('placeholder')) {
+                            if (cleanUrl.match(/\.(jpeg|jpg|gif|png|webp|avif|svg)(\?.*)?$/i) || cleanUrl.includes('pinimg.com/')) {
+                                if (cleanUrl.includes('pinimg.com')) {
+                                    cleanUrl = cleanUrl.replace(/\/(236x|474x|564x)\//, '/736x/');
+                                }
+                                if (cleanUrl.startsWith('//')) {
+                                    cleanUrl = 'https:' + cleanUrl;
+                                }
+                                imageUrl = cleanUrl;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (imageUrl) break;
+                }
+            }
+
+            if (!imageUrl) {
+                const items = clipboardData.items;
+                if (items) {
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            const file = items[i].getAsFile();
+                            if (file && file.size > 500) {
+                                e.preventDefault();
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    this.addMediaBlock(event.target.result);
+                                };
+                                reader.readAsDataURL(file);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!imageUrl) {
+                const textData = clipboardData.getData('text/plain')?.trim();
+                if (textData && (!isEditingText || textData.match(/^https?:\/\/.*\.(jpeg|jpg|gif|png|webp|avif|svg)($|\?)/i))) {
+                    if (textData.match(/^https?:\/\//i) || textData.startsWith('data:image/')) {
+                        imageUrl = textData;
+                    }
+                }
+            }
+
+            if (imageUrl) {
+                e.preventDefault();
+                this.addMediaBlock(imageUrl);
+                return;
+            }
         }
     }"
-    x-init="initTransformables()"
+    @paste.window="handlePaste($event)"
+    x-init="initTransformables(); if (window.innerWidth < 640) showPanel = false;"
     class="fixed inset-0 z-50 flex flex-col bg-[#0A0A0F] text-[#F5F5F7] font-sans select-none"
 >
     <!-- Inputs ocultos -->
@@ -246,40 +428,41 @@
     <input type="file" x-ref="mediaBlockRef" accept="image/*,video/mp4,video/webm,image/gif" class="hidden" @change="handleMediaUpload">
 
     <!-- BARRA SUPERIOR FIJA -->
-    <div class="flex items-center justify-between px-4 sm:px-6 py-3 flex-shrink-0 z-30 border-b border-white/10 bg-[#0A0A0F] text-[#F5F5F7]">
-        <div class="flex items-center gap-3">
-            <a href="{{ route('dashboard') }}" class="flex items-center gap-1.5 text-sm font-medium hover:opacity-70 transition-opacity text-white/70">
+    <div class="flex items-center justify-between px-3 sm:px-6 py-3 flex-shrink-0 z-30 border-b border-white/10 bg-[#0A0A0F] text-[#F5F5F7]">
+        <div class="flex items-center gap-2 sm:gap-3">
+            <a href="{{ url()->previous() }}" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium hover:opacity-70 transition-opacity text-white/70">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-                Volver
+                <span>Volver</span>
             </a>
             <div class="w-px h-4 bg-white/15"></div>
-            <span class="text-xs font-bold tracking-widest uppercase text-[#FF3D57]">Blog Studio · ENCONCIERTA</span>
+            <span class="text-xs font-bold tracking-widest uppercase text-[#FF3D57] max-sm:hidden">Blog Studio · ENCONCIERTA</span>
+            <span class="text-[10px] font-bold tracking-widest uppercase text-[#FF3D57] sm:hidden">Studio</span>
         </div>
         
         <div class="flex items-center gap-2">
             <button 
                 type="button"
                 @click="showPanel = !showPanel"
-                class="px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all border cursor-pointer"
+                class="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all border cursor-pointer"
                 :class="showPanel ? 'bg-[#FF3D57]/20 text-[#FF3D57] border-[#FF3D57]/40' : 'bg-white/5 text-[#9A9AA5] border-white/10 hover:bg-white/10'"
             >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                <span>Personalizar</span>
+                <span class="max-sm:hidden">Personalizar</span>
             </button>
 
             <button 
                 type="button"
                 @click="submitToLaravel"
                 :disabled="published"
-                class="px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:brightness-110 text-white cursor-pointer bg-[#FF3D57] shadow-[0_0_20px_rgba(255,61,87,0.4)]"
+                class="px-3 sm:px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all hover:brightness-110 text-white cursor-pointer bg-[#FF3D57] shadow-[0_0_20px_rgba(255,61,87,0.4)]"
             >
                 <span x-show="published" class="flex items-center gap-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-                    Guardando...
+                    <span>Guardando...</span>
                 </span>
                 <span x-show="!published" class="flex items-center gap-1">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Publicar blog
+                    <span>Publicar</span>
                 </span>
             </button>
         </div>
@@ -288,8 +471,8 @@
     <!-- CANVAS Y PANEL DERECHO -->
     <div class="flex flex-1 min-h-0 overflow-hidden relative">
         
-        <!-- COLUMNA VERTICAL IZQUIERDA DE ACCESOS RÁPIDOS -->
-        <div class="w-16 flex-shrink-0 bg-[#0A0A0F] border-r border-white/10 z-20 flex flex-col items-center py-4 gap-3">
+        <!-- COLUMNA VERTICAL IZQUIERDA (SÓLO DESKTOP: hidden en móvil, sm:flex en PC >=640px) -->
+        <div class="hidden sm:flex w-16 flex-shrink-0 bg-[#0A0A0F] border-r border-white/10 z-20 flex-col items-center py-4 gap-3">
             <span class="text-[9px] font-bold text-white/40 uppercase tracking-tighter mb-1">Añadir</span>
             
             <button type="button" @click="addBlock('text')" title="Texto" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-[#FF3D57]/20 hover:text-[#FF3D57] flex items-center justify-center transition-colors text-white text-xs font-bold cursor-pointer border border-white/5">
@@ -309,7 +492,18 @@
             </button>
         </div>
 
-        <!-- LIENZO PRINCIPAL -->
+        <!-- MÓVIL: BARRA INFERIOR DE ACCESOS RÁPIDOS PARA AÑADIR BLOQUES -->
+        <div class="sm:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-[#12121A]/95 backdrop-blur-xl border border-white/20 px-3 py-1.5 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.9)]">
+            <button type="button" @click="addBlock('text')" class="w-8 h-8 rounded-lg bg-white/5 active:bg-[#FF3D57]/30 text-white flex items-center justify-center text-xs font-bold border border-white/5">T</button>
+            <button type="button" @click="addBlock('media')" class="w-8 h-8 rounded-lg bg-white/5 active:bg-[#FF3D57]/30 text-white flex items-center justify-center border border-white/5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </button>
+            <button type="button" @click="addBlock('quote')" class="w-8 h-8 rounded-lg bg-white/5 active:bg-[#FF3D57]/30 text-white flex items-center justify-center text-sm font-bold border border-white/5">“</button>
+            <button type="button" @click="panelTab = 'stickers'; showPanel = true" class="w-8 h-8 rounded-lg bg-white/5 active:bg-[#FF3D57]/30 text-white flex items-center justify-center text-sm border border-white/5">🔥</button>
+            <button type="button" @click="addBlock('divider')" class="w-8 h-8 rounded-lg bg-white/5 active:bg-[#FF3D57]/30 text-white flex items-center justify-center border border-white/5">―</button>
+        </div>
+
+        <!-- LIENZO PRINCIPAL CON DESELECCIÓN AL HACER CLIC FUERA -->
         <div class="flex-1 overflow-y-auto relative transition-all" :style="{ background: canvasBg }" @click="deselectAll()">
             <div 
                 class="absolute inset-0 pointer-events-none transition-all" 
@@ -321,18 +515,17 @@
 
             <div 
                 id="blogCanvasInner"
-                class="mx-auto w-full transition-all relative z-10 pb-32 min-h-[850px]" 
+                class="mx-auto w-full transition-all relative z-10 pb-36 sm:pb-32 min-h-[850px]" 
                 :class="canvasPadding"
                 :style="{ maxWidth: canvasWidth, fontFamily: globalFont, letterSpacing: letterSpacing }"
             >
                 <!-- CABECERA ESTÁTICA -->
-                <div @click.stop>
+                <div>
                     <div 
-                        class="relative rounded-2xl overflow-hidden mb-8 group cursor-pointer transition-all duration-300 shadow-2xl"
+                        class="relative rounded-2xl overflow-hidden mb-8 group cursor-pointer transition-all duration-300 shadow-2xl h-52 sm:h-72"
                         :style="{ 
-                            height: coverImg ? '360px' : '160px', 
                             background: coverImg ? 'transparent' : canvasAccentColor + '12', 
-                            border: '2px dashed ' + canvasAccentColor + '40' 
+                            border: coverImg ? 'none' : '2px dashed ' + canvasAccentColor + '40' 
                         }"
                         @click.stop="$refs.coverRef.click()"
                     >
@@ -349,7 +542,7 @@
                         <button 
                             x-show="coverImg"
                             @click.stop="coverImg = null; document.getElementById('laravel_cover').value = '';" 
-                            class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all bg-black/70 text-white hover:bg-red-500 cursor-pointer"
+                            class="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all bg-black/70 text-white hover:bg-red-500 cursor-pointer"
                         >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
@@ -361,40 +554,44 @@
                     </div>
 
                     <!-- TÍTULO -->
-                    <div class="w-full mb-3">
-                        <input 
-                            type="text"
+                    <div class="w-full mb-3" @click.stop>
+                        <textarea 
                             x-model="title"
+                            x-init="$nextTick(() => { $el.style.height = 'auto'; $el.style.height = Math.max(65, $el.scrollHeight) + 'px'; }); $watch('title', () => { $el.style.height = 'auto'; $el.style.height = Math.max(65, $el.scrollHeight) + 'px'; })"
+                            @input="$el.style.height = 'auto'; $el.style.height = Math.max(65, $el.scrollHeight) + 'px'"
+                            rows="1"
                             placeholder="Título" 
-                            class="w-full bg-transparent font-extrabold leading-tight placeholder-current block outline-none transition-all"
+                            class="w-full bg-transparent font-extrabold leading-tight placeholder-current block outline-none transition-all resize-none overflow-hidden break-words min-h-[65px]"
                             :style="{ 
                                 fontSize: 'clamp(32px,5vw,56px)', 
                                 color: title ? titleColor : titleColor + '40', 
                                 caretColor: canvasAccentColor,
                                 textShadow: titleShadowStyle
                             }"
-                        >
+                        ></textarea>
                     </div>
 
                     <!-- SUBTÍTULO -->
-                    <div class="w-full mb-8 pb-4" :style="{ borderBottom: '1px solid ' + canvasAccentColor + '25' }">
-                        <input 
-                            type="text"
+                    <div class="w-full mb-8 pb-4" @click.stop :style="{ borderBottom: '1px solid ' + canvasAccentColor + '25' }">
+                        <textarea 
                             x-model="subtitle"
+                            x-init="$nextTick(() => { $el.style.height = 'auto'; $el.style.height = Math.max(35, $el.scrollHeight) + 'px'; }); $watch('subtitle', () => { $el.style.height = 'auto'; $el.style.height = Math.max(35, $el.scrollHeight) + 'px'; })"
+                            @input="$el.style.height = 'auto'; $el.style.height = Math.max(35, $el.scrollHeight) + 'px'"
+                            rows="1"
                             placeholder="Subtítulo" 
-                            class="w-full bg-transparent text-xl placeholder-current block outline-none transition-all"
+                            class="w-full bg-transparent text-xl placeholder-current block outline-none transition-all resize-none overflow-hidden break-words min-h-[35px]"
                             :style="{ color: subtitle ? textColor + 'DD' : textColor + '40', caretColor: canvasAccentColor }"
-                        >
+                        ></textarea>
                     </div>
                 </div>
 
                 <!-- ZONA LIBRE -->
-                <div class="relative w-full min-h-[600px]" @click.stop>
+                <div class="relative w-full min-h-[600px]">
                     
                     <template x-for="(block, idx) in blocks" :key="block.id">
                         <div 
                             :data-id="block.id"
-                            class="transform-block absolute rounded-xl transition-shadow group/block cursor-move"
+                            class="transform-block absolute rounded-xl transition-shadow group/block cursor-move touch-none"
                             :class="activeId === block.id ? 'ring-2 ring-[#FF3D57] shadow-2xl z-30' : 'z-10 hover:ring-1 hover:ring-white/20'"
                             :style="{ 
                                 transform: `translate(${block.x || 0}px, ${block.y || 0}px)`,
@@ -403,11 +600,18 @@
                             }"
                             @click.stop="activeId = block.id"
                         >
-                            <!-- TOOLBAR CONTEXTUAL -->
+                            <!-- TOOLBAR CONTEXTUAL BLOQUE -->
                             <div 
                                 x-show="activeId === block.id" 
-                                class="absolute -top-11 left-0 z-50 flex items-center gap-1.5 p-1 rounded-xl bg-[#12121A] border border-white/15 shadow-2xl text-xs font-sans text-white backdrop-blur-md"
+                                class="absolute -top-11 left-0 z-50 flex items-center gap-1.5 p-1 rounded-xl bg-[#12121A] border border-white/15 shadow-2xl text-xs font-sans text-white backdrop-blur-md max-w-[calc(100vw-2rem)] overflow-x-auto"
+                                @click.stop
                             >
+                                <!-- BOTÓN TIRADOR DE ARRASTRE DEDICADO PARA PANTALLAS TÁCTILES -->
+                                <div class="flex items-center justify-center px-1.5 py-1 bg-white/10 rounded text-white/70 hover:text-white cursor-grab active:cursor-grabbing" title="Arrastrar">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+                                </div>
+                                <div class="w-px h-3 bg-white/20"></div>
+
                                 <button type="button" @click="block.bold = !block.bold" class="px-2 py-1 font-bold rounded cursor-pointer hover:bg-white/10" :class="block.bold ? 'text-[#FF3D57]' : ''">B</button>
                                 <button type="button" @click="block.italic = !block.italic" class="px-2 py-1 font-bold rounded cursor-pointer hover:bg-white/10" :class="block.italic ? 'text-[#FF3D57]' : ''">I</button>
                                 <div class="w-px h-3 bg-white/20"></div>
@@ -418,18 +622,20 @@
                                 <button type="button" @click="removeBlock(block.id)" class="px-2 py-0.5 bg-[#FF3D57]/20 text-[#FF3D57] font-bold rounded hover:bg-[#FF3D57] hover:text-white cursor-pointer transition-colors text-[10px]">Eliminar</button>
                             </div>
 
-                            <!-- PUNTOS DE ESCALA -->
-                            <div x-show="activeId === block.id" class="absolute -top-1.5 -left-1.5 w-3 h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nwse-resize shadow-md"></div>
-                            <div x-show="activeId === block.id" class="absolute -top-1.5 -right-1.5 w-3 h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nesw-resize shadow-md"></div>
-                            <div x-show="activeId === block.id" class="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nesw-resize shadow-md"></div>
-                            <div x-show="activeId === block.id" class="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nwse-resize shadow-md"></div>
+                            <!-- PUNTOS DE ESCALA (TÁCTIL optimizado con margen táctil de 16px) -->
+                            <div x-show="activeId === block.id" class="absolute -top-2 -left-2 w-4 h-4 sm:w-3 sm:h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nwse-resize shadow-md"></div>
+                            <div x-show="activeId === block.id" class="absolute -top-2 -right-2 w-4 h-4 sm:w-3 sm:h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nesw-resize shadow-md"></div>
+                            <div x-show="activeId === block.id" class="absolute -bottom-2 -left-2 w-4 h-4 sm:w-3 sm:h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nesw-resize shadow-md"></div>
+                            <div x-show="activeId === block.id" class="absolute -bottom-2 -right-2 w-4 h-4 sm:w-3 sm:h-3 bg-[#FF3D57] border-2 border-white rounded-full z-40 cursor-nwse-resize shadow-md"></div>
 
-                            <!-- BLOQUE TEXTO -->
-                            <div x-show="block.type === 'text'" class="w-full h-full" @dblclick="enableTextEdit(block.id, $event)">
+                            <!-- BLOQUE TEXTO (Auto-ajuste dinámico de altura al escribir) -->
+                            <div x-show="block.type === 'text'" class="w-full h-full" @click.stop="enableTextEdit(block.id, $event)">
                                 <textarea 
                                     x-model="block.content" 
-                                    placeholder="Doble clic para escribir…"
-                                    class="w-full h-full bg-transparent resize-none placeholder-current outline-none overflow-hidden block transition-all"
+                                    placeholder="Toca para escribir…"
+                                    x-init="$nextTick(() => { $el.style.height = 'auto'; $el.style.height = Math.max(38, $el.scrollHeight) + 'px'; }); $watch('block.content', () => { $el.style.height = 'auto'; $el.style.height = Math.max(38, $el.scrollHeight) + 'px'; })"
+                                    @input="$el.style.height = 'auto'; $el.style.height = Math.max(38, $el.scrollHeight) + 'px'"
+                                    class="w-full bg-transparent resize-none placeholder-current outline-none overflow-hidden block transition-all"
                                     :class="editingTextId === block.id ? 'cursor-text ring-1 ring-white/30 bg-black/20' : 'cursor-pointer'"
                                     :readonly="editingTextId !== block.id"
                                     :style="{ 
@@ -447,46 +653,53 @@
                                 ></textarea>
                             </div>
 
-                            <!-- BLOQUE MEDIA (IMAGEN, GIF, VIDEO SILENCIADO POR DEFECTO) -->
-                            <div x-show="block.type === 'media'" class="w-full h-full overflow-hidden rounded-2xl flex items-center justify-center bg-black/40">
-                                <template x-if="block.content">
-                                    <template x-if="block.mediaType === 'video'">
-                                        <video :src="block.content" autoplay muted loop playsinline controls class="w-full h-full object-cover"></video>
-                                    </template>
-                                    <template x-if="block.mediaType !== 'video'">
-                                        <img :src="block.content" class="w-full h-full object-cover pointer-events-none">
-                                    </template>
-                                </template>
-                                <template x-if="!block.content">
-                                    <button 
-                                        type="button"
-                                        @click="pendingMediaId = block.id; $refs.mediaBlockRef.click()"
-                                        class="w-full h-full flex flex-col items-center justify-center gap-2 rounded-2xl bg-[#FF3D57]/10 border-2 border-dashed border-[#FF3D57]/40 text-[#FF3D57] hover:bg-[#FF3D57]/20 cursor-pointer"
-                                    >
-                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                        <span class="text-xs font-bold">Imagen, Video o GIF</span>
-                                    </button>
-                                </template>
+                            <!-- BLOQUE MEDIA -->
+                            <div x-show="block.type === 'media'" class="w-full h-full overflow-hidden rounded-2xl flex items-center justify-center bg-transparent" @click.stop="activeId = block.id">
+                                <video 
+                                    x-show="block.content && block.mediaType === 'video'"
+                                    :src="block.content" 
+                                    autoplay muted loop playsinline controls 
+                                    class="w-full h-full object-cover rounded-2xl"
+                                ></video>
+
+                                <img 
+                                    x-show="block.content && block.mediaType !== 'video'"
+                                    :src="block.content" 
+                                    referrerpolicy="no-referrer" 
+                                    class="w-full h-full object-contain pointer-events-none rounded-2xl"
+                                >
+
+                                <button 
+                                    x-show="!block.content"
+                                    type="button"
+                                    @click.stop="pendingMediaId = block.id; $refs.mediaBlockRef.click()"
+                                    class="w-full h-full flex flex-col items-center justify-center gap-2 rounded-2xl bg-[#FF3D57]/10 border-2 border-dashed border-[#FF3D57]/40 text-[#FF3D57] hover:bg-[#FF3D57]/20 cursor-pointer"
+                                >
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                    <span class="text-xs font-bold">Imagen, Video o GIF</span>
+                                </button>
                             </div>
 
                             <!-- BLOQUE STICKER -->
-                            <div x-show="block.type === 'sticker'" class="w-full h-full flex items-center justify-center">
+                            <div x-show="block.type === 'sticker'" class="w-full h-full flex items-center justify-center" @click.stop="activeId = block.id">
                                 <span class="select-none leading-none" :style="{ fontSize: (block.fontSize || 64) + 'px' }" x-text="block.content || '🔥'"></span>
                             </div>
 
-                            <!-- BLOQUE CITA -->
-                            <div x-show="block.type === 'quote'" class="w-full h-full border-l-4 pl-4" :style="{ borderColor: canvasAccentColor }" @dblclick="enableTextEdit(block.id, $event)">
+                            <!-- BLOQUE CITA (Auto-ajuste dinámico de altura al escribir) -->
+                            <div x-show="block.type === 'quote'" class="w-full h-full border-l-4 pl-4" :style="{ borderColor: canvasAccentColor }" @click.stop="enableTextEdit(block.id, $event)">
                                 <textarea 
                                     x-model="block.content" 
-                                    placeholder="Doble clic para escribir cita…"
-                                    class="w-full h-full bg-transparent resize-none italic placeholder-current outline-none overflow-hidden block"
+                                    placeholder="Toca para escribir cita…"
+                                    x-init="$nextTick(() => { $el.style.height = 'auto'; $el.style.height = Math.max(38, $el.scrollHeight) + 'px'; }); $watch('block.content', () => { $el.style.height = 'auto'; $el.style.height = Math.max(38, $el.scrollHeight) + 'px'; })"
+                                    @input="$el.style.height = 'auto'; $el.style.height = Math.max(38, $el.scrollHeight) + 'px'"
+                                    class="w-full bg-transparent resize-none italic placeholder-current outline-none overflow-hidden block"
                                     :readonly="editingTextId !== block.id"
                                     :style="{ color: block.color || textColor, fontSize: (block.fontSize || 18) + 'px', lineHeight: lineHeight }"
                                 ></textarea>
                             </div>
 
                             <!-- BLOQUE DIVISOR -->
-                            <div x-show="block.type === 'divider'" class="w-full h-full flex items-center gap-3">
+                            <div x-show="block.type === 'divider'" class="w-full h-full flex items-center gap-3" @click.stop="activeId = block.id">
                                 <div class="flex-1 h-px" :style="{ background: canvasAccentColor + '30' }"></div>
                                 <div class="w-2.5 h-2.5 rounded-full" :style="{ background: canvasAccentColor }"></div>
                                 <div class="flex-1 h-px" :style="{ background: canvasAccentColor + '30' }"></div>
@@ -498,7 +711,17 @@
         </div>
 
         <!-- PANEL LATERAL DE PERSONALIZACIÓN -->
-        <div x-show="showPanel" class="w-80 flex-shrink-0 flex flex-col overflow-hidden bg-[#0A0A0F] border-l border-white/10 z-20 backdrop-blur-xl font-sans text-[#F5F5F7]">
+        <div 
+            x-show="showPanel" 
+            @click.stop
+            class="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-14 max-sm:z-50 max-sm:w-full w-80 flex-shrink-0 flex flex-col overflow-hidden bg-[#0A0A0F] border-l border-white/10 z-20 backdrop-blur-xl font-sans text-[#F5F5F7]"
+        >
+            <!-- CABECERA CERRAR PANEL EN MÓVIL -->
+            <div class="sm:hidden flex items-center justify-between px-4 py-2 border-b border-white/10 bg-white/5">
+                <span class="text-xs font-bold text-[#FF3D57] uppercase tracking-wider">Personalizar Lienzo</span>
+                <button type="button" @click="showPanel = false" class="text-xs font-bold px-2.5 py-1 bg-white/10 rounded-lg text-white active:bg-white/20">Cerrar</button>
+            </div>
+
             <div class="flex flex-shrink-0 border-b border-white/10 overflow-x-auto no-scrollbar">
                 <template x-for="t in ['fondo', 'texto', 'disposición', 'stickers']" :key="t">
                     <button 
@@ -511,7 +734,7 @@
                 </template>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-6">
+            <div class="flex-1 overflow-y-auto p-5 flex flex-col gap-6 max-sm:pb-24">
                 <!-- PESTAÑA FONDO -->
                 <div x-show="panelTab === 'fondo'" class="flex flex-col gap-5">
                     <div>
@@ -674,7 +897,7 @@
                     <label class="text-[10px] font-extrabold tracking-widest uppercase mb-3 block text-[#6A6A75]">Añadir sticker libre al canvas</label>
                     <div class="grid grid-cols-4 gap-2">
                         <template x-for="st in stickersList" :key="st">
-                            <button type="button" @click="addBlock('sticker', st)" class="text-2xl p-3 rounded-xl bg-white/5 hover:bg-white/15 transition-transform hover:scale-110 flex items-center justify-center border border-white/5 cursor-pointer" x-text="st"></button>
+                            <button type="button" @click="addBlock('sticker', st); if(window.innerWidth < 640) showPanel = false;" class="text-2xl p-3 rounded-xl bg-white/5 hover:bg-white/15 transition-transform hover:scale-110 flex items-center justify-center border border-white/5 cursor-pointer" x-text="st"></button>
                         </template>
                     </div>
                 </div>

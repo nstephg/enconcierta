@@ -83,4 +83,12 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'seguidores', 'id_seguidor', 'id_seguido');
     }
+
+    /**
+     * Relación con los blogs creados por el usuario.
+     */
+    public function blogs()
+    {
+        return $this->hasMany(Blog::class, 'id_usuario', 'id_usuario');
+    }
 }

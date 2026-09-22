@@ -17,6 +17,11 @@ Route::get('/', function () {
     return app(HomeController::class)();
 })->name('home');
 
+// Redirección de autenticación por GET para evitar HTTP 405
+Route::get('/login', function () {
+    return redirect()->route('home');
+})->name('login');
+
 Route::middleware(['auth'])->group(function () {
     // Configuración inicial de perfil (Onboarding)
     Route::get('/perfil/configurar', [ProfileController::class, 'showSetup'])->name('profile.setup');
@@ -41,11 +46,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/spotify/callback', [SpotifyController::class, 'callback'])->name('spotify.callback');
     Route::post('/spotify/disconnect', [SpotifyController::class, 'disconnect'])->name('spotify.disconnect');
 
-    // Blogs
+    // Rutas de Blogs (Lectura y Gestión)
     Route::get('/blogs/crear', [BlogController::class, 'create'])->name('blogs.create');
     Route::post('/blogs', [BlogController::class, 'store'])->name('blogs.store');
+    Route::get('/blogs/{id}', [BlogController::class, 'show'])->name('blogs.show');
+    Route::get('/blogs/{id}/editar', [BlogController::class, 'edit'])->name('blogs.edit');
+    Route::put('/blogs/{id}', [BlogController::class, 'update'])->name('blogs.update');
+    Route::delete('/blogs/{id}', [BlogController::class, 'destroy'])->name('blogs.destroy');
 });
 
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.perform');
 Route::post('/register', [AuthController::class, 'register'])->name('register');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
