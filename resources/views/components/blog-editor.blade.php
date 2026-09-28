@@ -1,6 +1,10 @@
 @props(['blog' => null])
 
 @php
+    $prevUrl = url()->previous();
+    $currUrl = url()->current();
+    $backUrl = ($prevUrl && $prevUrl !== $currUrl) ? $prevUrl : route('dashboard');
+
     $estilos = is_array($blog->estilos ?? null) 
         ? $blog->estilos 
         : json_decode($blog->estilos ?? '{}', true);
@@ -430,7 +434,7 @@
     <!-- BARRA SUPERIOR FIJA -->
     <div class="flex items-center justify-between px-3 sm:px-6 py-3 flex-shrink-0 z-30 border-b border-white/10 bg-[#0A0A0F] text-[#F5F5F7]">
         <div class="flex items-center gap-2 sm:gap-3">
-            <a href="{{ url()->previous() }}" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium hover:opacity-70 transition-opacity text-white/70">
+            <a href="{{ $backUrl }}" class="flex items-center gap-1.5 text-xs sm:text-sm font-medium hover:opacity-70 transition-opacity text-white/70">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
                 <span>Volver</span>
             </a>

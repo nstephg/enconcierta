@@ -47,6 +47,10 @@
 <body class="min-h-screen bg-[#0A0A0F] text-[#F5F5F7] font-sans antialiased pt-16 pb-8 px-2 sm:px-6 flex flex-col items-center" x-data="{ showDeleteModal: false }">
 
     @php
+        $prevUrl = url()->previous();
+        $currUrl = url()->current();
+        $backUrl = ($prevUrl && $prevUrl !== $currUrl) ? $prevUrl : route('dashboard');
+
         $estilos = is_array($blog->estilos) 
             ? $blog->estilos 
             : json_decode($blog->estilos ?? '{}', true);
@@ -98,7 +102,7 @@
 
     <!-- BARRA SUPERIOR FIJA EDGE-TO-EDGE -->
     <header class="fixed top-0 left-0 right-0 w-full z-50 bg-[#0C0C13]/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-8 py-2.5 flex items-center justify-between shadow-lg">
-        <a href="{{ url()->previous() }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#9A9AA5] hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
+        <a href="{{ $backUrl }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#9A9AA5] hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
             <i class="fa-solid fa-arrow-left text-[11px]"></i>
             <span>Volver</span>
         </a>

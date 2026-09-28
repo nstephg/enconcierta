@@ -28,7 +28,7 @@
     @include('layouts.partials.dashboard-sidebar')
 
     <!-- CONTENEDOR PRINCIPAL -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-screen md:min-h-0 md:h-full overflow-y-auto pb-24 md:pb-0 relative">
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen md:min-h-0 relative pb-24 md:pb-0">
         @include('layouts.partials.dashboard-header')
 
         <main class="flex-1">

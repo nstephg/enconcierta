@@ -1,5 +1,5 @@
 <!-- HEADER DESKTOP -->
-<header class="hidden md:flex items-center justify-between px-6 h-[68px] flex-shrink-0 border-b border-white/5 bg-[#0A0A0F]/85 backdrop-blur-md">
+<header class="hidden md:flex items-center justify-between px-6 h-[68px] flex-shrink-0 border-b border-white/5 bg-[#0A0A0F]/85 backdrop-blur-md sticky top-0 z-40">
     <h1 class="text-[#F5F5F7] font-semibold text-base">@yield('page-title', 'Feed')</h1>
     
     <div class="flex items-center gap-4">

@@ -5,6 +5,10 @@
 
 @section('content')
 @php
+    $prevUrl = url()->previous();
+    $currUrl = url()->current();
+    $backUrl = ($prevUrl && $prevUrl !== $currUrl) ? $prevUrl : route('dashboard');
+
     $showTitle = !empty($post->show_nombre) ? $post->show_nombre : ($post->evento ? $post->evento->artista : null);
     $showPlace = $post->evento ? ($post->evento->lugar . ' · ' . $post->evento->ciudad) : $post->ubicacion;
     $showDate = $post->evento ? \Carbon\Carbon::parse($post->evento->fecha)->format('D d M') : ($post->created_at ? $post->created_at->format('d M') : null);
@@ -35,7 +39,7 @@
         <section class="w-full md:w-[480px] lg:w-[520px] md:flex-shrink-0 border-b md:border-b-0 md:border-r border-white/10 flex flex-col md:overflow-y-auto bg-[#08080C] no-scrollbar">
             
             <div class="px-5 pt-4 pb-1 flex items-center justify-between flex-shrink-0">
-                <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-xs font-semibold text-[#9A9AA5] hover:text-white transition-colors">
+                <a href="{{ $backUrl }}" class="inline-flex items-center gap-2 text-xs font-semibold text-[#9A9AA5] hover:text-white transition-colors">
                     <i class="fa-solid fa-arrow-left"></i> Volver
                 </a>
             </div>

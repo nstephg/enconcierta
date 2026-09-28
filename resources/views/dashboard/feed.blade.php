@@ -19,7 +19,7 @@
         @endforelse
     </div>
 
-    <div class="w-[272px] flex-shrink-0 hidden xl:flex flex-col gap-4 sticky top-6 self-start max-h-[calc(100vh-100px)] overflow-y-auto no-scrollbar">
+    <div class="w-[272px] flex-shrink-0 hidden xl:flex flex-col gap-4 sticky top-[92px] self-start h-fit">
         <div class="rounded-2xl p-4 bg-[#0C0C13] border border-white/5">
             <h3 class="text-[#F5F5F7] text-sm font-semibold mb-4">Melómanos en ENCONCIERTA</h3>
             <div class="flex flex-col gap-3">
