@@ -11,21 +11,16 @@ use App\Models\Publicacion;
 use App\Models\Participacion;
 use App\Models\User;
 use App\Models\Blog;
+use App\Models\Notificacion;
 
 class ProfileController extends Controller
 {
-    /**
-     * Muestra la pantalla de configuración inicial del perfil (Onboarding).
-     */
     public function showSetup()
     {
         $user = Auth::user();
         return view('profile.setup', compact('user'));
     }
 
-    /**
-     * Guarda la configuración inicial del perfil (Onboarding).
-     */
     public function saveSetup(Request $request)
     {
         /** @var \App\Models\User $user */
@@ -73,9 +68,6 @@ class ProfileController extends Controller
         return redirect()->route('dashboard');
     }
 
-    /**
-     * Muestra la vista principal del perfil de un usuario.
-     */
     public function show($id = null)
     {
         /** @var \App\Models\User $user */
@@ -83,19 +75,16 @@ class ProfileController extends Controller
         $authUserId = Auth::id();
         $isOwnProfile = $authUserId && $authUserId == $user->id_usuario;
 
-        // Cargar publicaciones creadas por el usuario objetivo
         $posts = Publicacion::with(['evento', 'likes'])
             ->where('id_usuario', $user->id_usuario)
             ->orderBy('fecha', 'desc')
             ->get();
 
-        // Cargar blogs creados por el usuario objetivo
         $blogs = $user->blogs()
             ->select(['id_blog', 'id_usuario', 'titulo', 'subtitulo', 'portada', 'vistas', 'created_at'])
             ->latest()
             ->get();
 
-        // Conteo seguro de shows
         $showsCount = 0;
         if (Schema::hasTable('participaciones')) {
             try {
@@ -105,14 +94,12 @@ class ProfileController extends Controller
             }
         }
 
-        // Obtener listas y conteo de seguidores / seguidos con estado de seguimiento del usuario autenticado
         $followingList = [];
         $followersList = [];
         $isFollowingAuthor = false;
 
         if (Schema::hasTable('seguidores')) {
             try {
-                // IDs que sigue actualmente el usuario autenticado
                 $authFollowingIds = DB::table('seguidores')
                     ->where('id_seguidor', $authUserId)
                     ->pluck('id_seguido')
@@ -145,7 +132,7 @@ class ProfileController extends Controller
                     ->where('id_seguido', $user->id_usuario)
                     ->exists();
             } catch (\Throwable $e) {
-                // Silenciar en caso de mantenimiento
+                // Silenciar
             }
         }
 
@@ -165,9 +152,6 @@ class ProfileController extends Controller
         ));
     }
 
-    /**
-     * Alterna el estado de seguimiento a un usuario (Seguir / Dejar de seguir).
-     */
     public function toggleFollow($id)
     {
         if (!Schema::hasTable('seguidores')) {
@@ -195,6 +179,12 @@ class ProfileController extends Controller
                 ->where('id_seguido', $targetUser->id_usuario)
                 ->delete();
             $isFollowing = false;
+
+            // Eliminar notificación de seguimiento si lo deja de seguir
+            Notificacion::where('id_usuario', $targetUser->id_usuario)
+                ->where('id_actor', $authUserId)
+                ->where('tipo', 'follow')
+                ->delete();
         } else {
             DB::table('seguidores')->insert([
                 'id_seguidor' => $authUserId,
@@ -202,6 +192,14 @@ class ProfileController extends Controller
                 'created_at'  => now(),
             ]);
             $isFollowing = true;
+
+            // Disparar Notificación de Seguimiento
+            Notificacion::crear(
+                idUsuario: $targetUser->id_usuario,
+                idActor: $authUserId,
+                tipo: 'follow',
+                accion: 'empezó a seguirte'
+            );
         }
 
         $followersCount = DB::table('seguidores')
@@ -215,9 +213,6 @@ class ProfileController extends Controller
         ]);
     }
 
-    /**
-     * Actualiza la información detallada del perfil de usuario.
-     */
     public function update(Request $request)
     {
         /** @var \App\Models\User $user */
@@ -251,10 +246,8 @@ class ProfileController extends Controller
             $user->portada = $request->file('portada')->store('portadas', 'public');
         }
 
-        // Limpieza de formato para Instagram
         $instagram = !empty($validated['instagram']) ? ltrim($validated['instagram'], '@') : null;
 
-        // Asignación directa limpia a las columnas de la tabla users
         $user->nombre = $validated['nombre'];
         $user->handle = strtolower($validated['handle']);
         $user->ciudad = $validated['ciudad'] ?? null;

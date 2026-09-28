@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AuthController;
@@ -53,6 +55,38 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/blogs/{id}/editar', [BlogController::class, 'edit'])->name('blogs.edit');
     Route::put('/blogs/{id}', [BlogController::class, 'update'])->name('blogs.update');
     Route::delete('/blogs/{id}', [BlogController::class, 'destroy'])->name('blogs.destroy');
+
+    // Rutas de Notificaciones
+    Route::post('/notificaciones/marcar-leidas', function (Request $request) {
+        $userId = auth()->user()->id_usuario;
+
+        DB::table('notificaciones')
+            ->where('id_usuario', $userId)
+            ->where('leido', 0)
+            ->update([
+                'leido' => 1,
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['success' => true]);
+    })->name('notificaciones.marcarLeidas');
+
+    Route::post('/notificaciones/eliminar', function (Request $request) {
+        $userId = auth()->user()->id_usuario;
+
+        if ($request->boolean('all')) {
+            DB::table('notificaciones')
+                ->where('id_usuario', $userId)
+                ->delete();
+        } elseif ($request->has('ids') && is_array($request->input('ids'))) {
+            DB::table('notificaciones')
+                ->where('id_usuario', $userId)
+                ->whereIn('id_notificacion', $request->input('ids'))
+                ->delete();
+        }
+
+        return response()->json(['success' => true]);
+    })->name('notificaciones.eliminar');
 });
 
 Route::post('/login', [AuthController::class, 'login'])->name('login.perform');

@@ -26,4 +26,28 @@ class Like extends Model
     {
         return $this->belongsTo(Publicacion::class, 'id_publicacion', 'id_publicacion');
     }
+
+    public function toggleLike($idPublicacion)
+    {
+        $publicacion = Publicacion::findOrFail($idPublicacion);
+        $user = auth()->user();
+
+        $like = $publicacion->likes()->where('id_usuario', $user->id_usuario)->first();
+
+        if ($like) {
+            $like->delete();
+        } else {
+            $publicacion->likes()->create(['id_usuario' => $user->id_usuario]);
+
+            // Disparar Notificación
+            Notificacion::crear(
+                idUsuario: $publicacion->id_usuario,
+                idActor: $user->id_usuario,
+                tipo: 'vibro',
+                accion: 'vibró con tu momento de',
+                subject: $publicacion->show_nombre ?? 'tu publicación',
+                idPublicacion: $publicacion->id_publicacion
+            );
+        }
+    }
 }

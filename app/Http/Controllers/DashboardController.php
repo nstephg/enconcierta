@@ -6,6 +6,7 @@ use App\Models\Comentario;
 use App\Models\ComentarioLike;
 use App\Models\Evento;
 use App\Models\Like;
+use App\Models\Notificacion;
 use App\Models\Publicacion;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -21,7 +22,6 @@ class DashboardController extends Controller
             $q->whereNull('parent_id');
         }])->latest('created_at')->get();
 
-        // Consulta optimizada para cargar la relación de seguimiento real y permitir melómanos verificados
         $suggestedUsers = User::where('id_usuario', '!=', Auth::id())
             ->where('id_rol', '!=', 2)
             ->withExists(['followers as is_following' => function ($q) {
@@ -121,7 +121,7 @@ class DashboardController extends Controller
 
         $storedGifs = !empty($validated['gifs']) ? array_values(array_filter($validated['gifs'])) : [];
 
-        Comentario::create([
+        $comment = Comentario::create([
             'id_publicacion' => $post->id_publicacion,
             'parent_id' => $validated['parent_id'] ?? null,
             'id_usuario' => Auth::id(),
@@ -129,6 +129,30 @@ class DashboardController extends Controller
             'imagenes' => !empty($storedImages) ? $storedImages : null,
             'gifs' => !empty($storedGifs) ? $storedGifs : null,
         ]);
+
+        // Disparar Notificación de Respuesta o Comentario
+        if ($comment->parent_id) {
+            $parentComment = Comentario::find($comment->parent_id);
+            if ($parentComment) {
+                Notificacion::crear(
+                    idUsuario: $parentComment->id_usuario,
+                    idActor: Auth::id(),
+                    tipo: 'reply',
+                    accion: 'respondió a tu comentario en',
+                    subject: $post->show_nombre ?? 'un momento',
+                    idPublicacion: $post->id_publicacion
+                );
+            }
+        } else {
+            Notificacion::crear(
+                idUsuario: $post->id_usuario,
+                idActor: Auth::id(),
+                tipo: 'comment',
+                accion: 'comentó en tu momento de',
+                subject: $post->show_nombre ?? 'un momento',
+                idPublicacion: $post->id_publicacion
+            );
+        }
 
         return redirect()->route('posts.show', $post->id_publicacion);
     }
@@ -183,12 +207,29 @@ class DashboardController extends Controller
         if ($like) {
             $like->delete();
             $liked = false;
+
+            // Limpiar notificación si quita la reacción
+            Notificacion::where('id_usuario', $post->id_usuario)
+                ->where('id_actor', $userId)
+                ->where('tipo', 'vibro')
+                ->where('id_publicacion', $post->id_publicacion)
+                ->delete();
         } else {
             Like::create([
                 'id_usuario' => $userId,
                 'id_publicacion' => $post->id_publicacion,
             ]);
             $liked = true;
+
+            // Disparar Notificación de Like/Vibro
+            Notificacion::crear(
+                idUsuario: $post->id_usuario,
+                idActor: $userId,
+                tipo: 'vibro',
+                accion: 'vibró con tu momento de',
+                subject: $post->show_nombre ?? 'un momento',
+                idPublicacion: $post->id_publicacion
+            );
         }
 
         return response()->json([
@@ -200,7 +241,7 @@ class DashboardController extends Controller
 
     public function toggleCommentLike($id)
     {
-        $comment = Comentario::findOrFail($id);
+        $comment = Comentario::with('publicacion')->findOrFail($id);
         $userId = Auth::id();
 
         $like = ComentarioLike::where('id_comentario', $comment->id_comentario)
@@ -216,6 +257,16 @@ class DashboardController extends Controller
                 'id_comentario' => $comment->id_comentario,
             ]);
             $liked = true;
+
+            // Disparar Notificación de Like en Comentario
+            Notificacion::crear(
+                idUsuario: $comment->id_usuario,
+                idActor: $userId,
+                tipo: 'vibro',
+                accion: 'vibró con tu comentario en',
+                subject: $comment->publicacion->show_nombre ?? 'un momento',
+                idPublicacion: $comment->id_publicacion
+            );
         }
 
         return response()->json([

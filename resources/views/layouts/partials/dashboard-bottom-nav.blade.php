@@ -28,7 +28,10 @@
     </a>
 
     <!-- Mi Perfil -->
-    <a href="{{ route('profile.show') }}" class="flex flex-col items-center gap-1 p-1 min-w-[52px] {{ request()->routeIs('profile.show') ? 'text-[#FF3D57]' : 'text-[#9A9AA5] hover:text-white' }}">
+    @php
+        $isOwnProfile = request()->routeIs('profile.show') && (!request()->route('id') || request()->route('id') == auth()->id());
+    @endphp
+    <a href="{{ route('profile.show') }}" class="flex flex-col items-center gap-1 p-1 min-w-[52px] {{ $isOwnProfile ? 'text-[#FF3D57]' : 'text-[#9A9AA5] hover:text-white' }}">
         <i class="fa-solid fa-user text-lg"></i>
         <span class="text-[10px] font-medium">Perfil</span>
     </a>

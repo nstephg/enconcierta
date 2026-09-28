@@ -28,10 +28,13 @@
             <span class="ml-auto text-white text-[10px] font-bold rounded-full bg-[#FF3D57] min-w-[18px] h-[18px] flex items-center justify-center px-1">10</span>
         </a>
 
-        <a href="{{ route('profile.show') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative {{ request()->routeIs('profile.show') ? 'bg-[#FF3D57]/12 text-[#FF3D57]' : 'text-[#9A9AA5] hover:bg-white/5 hover:text-white' }}">
+        @php
+            $isOwnProfile = request()->routeIs('profile.show') && (!request()->route('id') || request()->route('id') == auth()->id());
+        @endphp
+        <a href="{{ route('profile.show') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative {{ $isOwnProfile ? 'bg-[#FF3D57]/12 text-[#FF3D57]' : 'text-[#9A9AA5] hover:bg-white/5 hover:text-white' }}">
             <i class="fa-solid fa-user text-lg w-5 text-center"></i>
             <span class="text-sm font-medium">Mi perfil</span>
-            @if(request()->routeIs('profile.show'))
+            @if($isOwnProfile)
                 <div class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-[#FF3D57]"></div>
             @endif
         </a>
