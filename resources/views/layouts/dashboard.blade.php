@@ -21,6 +21,10 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
+
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="min-h-screen min-h-[100dvh] antialiased bg-[#0A0A0F] text-[#F5F5F7] font-sans selection:bg-[#FF3D57] selection:text-white flex flex-col md:flex-row relative">
 
@@ -38,6 +42,9 @@
 
     <!-- BARRA NAVEGACIÓN INFERIOR MÓVIL FIJA -->
     @include('layouts.partials.dashboard-bottom-nav')
+
+    <!-- MODALES -->
+    @include('layouts.partials.modals')
 
     @stack('scripts')
 </body>

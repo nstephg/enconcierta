@@ -71,7 +71,10 @@ class ProfileController extends Controller
     public function show($id = null)
     {
         /** @var \App\Models\User $user */
-        $user = $id ? User::findOrFail($id) : Auth::user();
+        $user = $id 
+            ? User::where('id_usuario', $id)->orWhere('handle', $id)->firstOrFail() 
+            : Auth::user();
+
         $authUserId = Auth::id();
         $isOwnProfile = $authUserId && $authUserId == $user->id_usuario;
 
@@ -222,7 +225,7 @@ class ProfileController extends Controller
             'nombre' => ['required', 'string', 'max:255'],
             'handle' => ['required', 'string', 'max:50', 'regex:/^[a-zA-Z0-9_]+$/', 'unique:users,handle,' . $user->id_usuario . ',id_usuario'],
             'ciudad' => ['nullable', 'string', 'max:100'],
-            'bio' => ['nullable', 'string', 'max:160'],
+            'bio' => ['nullable', 'string', 'max:250'],
             'spotify' => ['nullable', 'string', 'max:255'],
             'spotify_name' => ['nullable', 'string', 'max:255'],
             'instagram' => ['nullable', 'string', 'max:255'],
@@ -248,6 +251,9 @@ class ProfileController extends Controller
 
         $instagram = !empty($validated['instagram']) ? ltrim($validated['instagram'], '@') : null;
 
+        // Capturar biografía anterior para comparar menciones únicas
+        $oldBio = $user->bio ?? '';
+
         $user->nombre = $validated['nombre'];
         $user->handle = strtolower($validated['handle']);
         $user->ciudad = $validated['ciudad'] ?? null;
@@ -259,6 +265,34 @@ class ProfileController extends Controller
         $user->artistas = $validated['artistas'] ?? [];
 
         $user->save();
+
+        // DETECCIÓN INTELIGENTE DE NUEVAS MENCIONES (@)
+        $newBio = $validated['bio'] ?? '';
+        if (!empty($newBio)) {
+            preg_match_all('/@([a-zA-Z0-9_]+)/', $oldBio, $oldMatches);
+            preg_match_all('/@([a-zA-Z0-9_]+)/', $newBio, $newMatches);
+
+            $oldHandles = array_unique(array_map('strtolower', $oldMatches[1] ?? []));
+            $newHandles = array_unique(array_map('strtolower', $newMatches[1] ?? []));
+
+            // Filtrar únicamente los handles agregados por primera vez
+            $freshHandles = array_diff($newHandles, $oldHandles);
+
+            if (!empty($freshHandles)) {
+                $mentionedUsers = User::whereIn('handle', $freshHandles)
+                    ->where('id_usuario', '!=', Auth::id())
+                    ->get();
+
+                foreach ($mentionedUsers as $mUser) {
+                    Notificacion::crear(
+                        idUsuario: $mUser->id_usuario,
+                        idActor: Auth::id(),
+                        tipo: 'mention',
+                        accion: 'te mencionó en su biografía de perfil'
+                    );
+                }
+            }
+        }
 
         return redirect()->route('profile.show')->with('success', '¡Perfil actualizado con éxito!');
     }

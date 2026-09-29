@@ -9,6 +9,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SpotifyController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\AccountController;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -34,6 +35,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/perfil', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/usuarios/{id}/follow', [ProfileController::class, 'toggleFollow'])->name('users.follow');
 
+    //Multi-cuenta
+    Route::post('/cuentas/cambiar/{id}', [AccountController::class, 'switchAccount'])->name('accounts.switch');
+    Route::post('/cuentas/remover/{id}', [AccountController::class, 'removeAccount'])->name('accounts.remove');
+
     // Dashboard y Publicaciones
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/posts', [DashboardController::class, 'storePost'])->name('posts.store');
@@ -42,6 +47,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/posts/{id}/vote', [DashboardController::class, 'votePoll'])->name('posts.vote');
     Route::post('/posts/{id}/comments', [DashboardController::class, 'storeComment'])->name('posts.comments.store');
     Route::post('/comments/{id}/like', [DashboardController::class, 'toggleCommentLike'])->name('comments.like');
+    Route::delete('/comments/{id}', [DashboardController::class, 'destroyComment'])->name('comments.destroy');
+    Route::delete('/posts/{id}', [DashboardController::class, 'destroyPost'])->name('posts.destroy');
 
     // Spotify
     Route::get('/spotify/login', [SpotifyController::class, 'redirect'])->name('spotify.login');

@@ -22,6 +22,13 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
+            // GUARDAR EL ID DE LA CUENTA EN LA LISTA MULTICUENTA DE LA SESIÓN
+            $savedAccounts = session('saved_accounts', []);
+            if (!in_array($user->id_usuario, $savedAccounts)) {
+                $savedAccounts[] = $user->id_usuario;
+            }
+            session(['saved_accounts' => array_values(array_unique($savedAccounts))]);
+
             $nextUrl = $user->perfil_completado ? route('dashboard') : route('profile.setup');
 
             if ($request->wantsJson()) {
@@ -66,6 +73,13 @@ class AuthController extends Controller
 
         Auth::login($user);
 
+        // GUARDAR EL ID EN LA SESIÓN AL REGISTRARSE
+        $savedAccounts = session('saved_accounts', []);
+        if (!in_array($user->id_usuario, $savedAccounts)) {
+            $savedAccounts[] = $user->id_usuario;
+        }
+        session(['saved_accounts' => array_values(array_unique($savedAccounts))]);
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
@@ -80,6 +94,20 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $currentId = Auth::id();
+        $savedAccounts = session('saved_accounts', []);
+        $savedAccounts = array_values(array_diff($savedAccounts, [$currentId]));
+        session(['saved_accounts' => $savedAccounts]);
+
+        // Si existen otras cuentas registradas en este navegador, conmutar a la primera
+        if (!empty($savedAccounts)) {
+            $nextUser = User::find($savedAccounts[0]);
+            if ($nextUser) {
+                Auth::login($nextUser);
+                return redirect()->route('dashboard');
+            }
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

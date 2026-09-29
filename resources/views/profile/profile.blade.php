@@ -32,6 +32,26 @@
     $isFollowingAuthor = $isFollowingAuthor ?? false;
 @endphp
 
+<script>
+    if (typeof window.highlightMentions === 'undefined') {
+        window.highlightMentions = function(text) {
+            if (!text) return '';
+            var escaped = text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+            // Se elimina font-semibold para evitar desfasar el ancho de los caracteres y deslinear el cursor
+            var highlighted = escaped.replace(/@[a-zA-Z0-9_]+/g, '<span class="text-[#7C5CFF]">$&</span>');
+            if (text.endsWith('\n')) {
+                highlighted += '<br>&nbsp;';
+            }
+            return highlighted;
+        };
+    }
+</script>
+
 <div class="max-w-[780px] mx-auto w-full px-3 sm:px-4 py-4 sm:py-6 pb-20 md:pb-6">
 
     <!-- Modal Lightbox -->
@@ -198,7 +218,8 @@
 
         <div class="mb-5 flex flex-col gap-2.5 px-1">
             @if($bio)
-                <p class="text-[#E0E0E6] text-sm leading-relaxed">{{ $bio }}</p>
+                <!-- Se elimina nl2br() para evitar la duplicación de saltos de línea con whitespace-pre-line -->
+                <p class="text-[#E0E0E6] text-sm leading-relaxed whitespace-pre-line break-words">{!! format_mentions($bio) !!}</p>
             @endif
 
             <!-- ENLACES SOCIALES (UBICACIÓN, INSTAGRAM, SPOTIFY) -->
@@ -380,7 +401,7 @@
     @if($isOwnProfile)
     <!-- Pestaña 3: Editar Perfil (Acceso exclusivo por botón de tuerca) -->
     <div id="tab-content-editar" class="{{ $isInitialEdit ? '' : 'hidden' }} flex flex-col gap-5">
-        <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" class="flex flex-col gap-5">
+        <form action="{{ route('profile.update') }}" method="POST" enctype="multipart/form-data" onsubmit="addGenreTag(); addArtistTag();" class="flex flex-col gap-5">
             @csrf
             @method('PUT')
 
@@ -416,11 +437,30 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-col">
+
+                <!-- CAMPO BIOGRAFÍA CON CAPA ESPEJO Y RESALTADO DINÁMICO DE MENCIONES -->
+                <div class="flex flex-col" 
+                     x-data="{ 
+                        bioText: @js(old('bio', $bio ?? '')),
+                        get bioCount() { return this.bioText ? this.bioText.length : 0; }
+                     }">
                     <label class="text-[#9A9AA5] text-xs font-semibold block mb-2">Biografía</label>
-                    <textarea name="bio" rows="3" maxlength="160" oninput="updateBioCount(this)"
-                              class="w-full text-[#F5F5F7] text-sm rounded-xl px-4 py-3 bg-[#17171F] border border-white/10 outline-none focus:border-[#FF3D57] resize-none">{{ old('bio', $bio) }}</textarea>
-                    <span id="bioCharCounter" class="text-[#9A9AA5] text-[11px] self-end mt-1 font-mono-code">{{ strlen($bio) }}/160</span>
+                    <div class="relative w-full rounded-xl bg-[#17171F] border border-white/10 focus-within:border-[#FF3D57] overflow-hidden min-h-[110px]">
+                        <!-- Capa espejo con tipografía exacta a la del textarea -->
+                        <div x-ref="bioBackdrop" 
+                             class="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-sm font-sans font-normal leading-relaxed tracking-normal text-[#F5F5F7] p-4 m-0 border-0 overflow-hidden select-none"
+                             x-html="highlightMentions(bioText)"></div>
+
+                        <textarea id="bioTextarea" 
+                                  name="bio" 
+                                  rows="3" 
+                                  maxlength="250" 
+                                  x-model="bioText"
+                                  @scroll="$refs.bioBackdrop.scrollTop = $el.scrollTop"
+                                  class="w-full bg-transparent text-transparent caret-white text-sm font-sans font-normal leading-relaxed tracking-normal resize-none outline-none focus:outline-none focus:ring-0 placeholder-[#9A9AA5] relative z-10 p-4 m-0 border-0"
+                                  placeholder="Cuéntanos sobre ti...">{{ old('bio', $bio) }}</textarea>
+                    </div>
+                    <span class="text-[#9A9AA5] text-[11px] self-end mt-1 font-mono-code" x-text="bioCount + '/250'"></span>
                 </div>
                 <div>
                     <label class="text-[#9A9AA5] text-xs font-semibold block mb-2">Ciudad</label>
@@ -448,8 +488,12 @@
                         @endforeach
                         <div class="flex items-center border border-dashed border-white/20 rounded-full px-3 py-1.5 text-xs text-[#9A9AA5] focus-within:border-[#7C5CFF]">
                             <span class="mr-1">+</span>
-                            <input type="text" id="inputAddGenre" onkeydown="if(event.key==='Enter'){ event.preventDefault(); addGenreTag(); }" placeholder="Agregar" 
-                                   class="bg-transparent outline-none w-16 text-xs text-white placeholder-[#9A9AA5]">
+                            <input type="text" 
+                                id="inputAddGenre" 
+                                onkeydown="if(event.key==='Enter'){ event.preventDefault(); addGenreTag(); }" 
+                                onblur="addGenreTag()"
+                                placeholder="Agregar" 
+                                class="bg-transparent outline-none w-20 text-xs text-white placeholder-[#9A9AA5]">
                         </div>
                     </div>
                 </div>

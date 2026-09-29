@@ -276,3 +276,37 @@ window.removePollOption = function(btn) {
     }
     btn.parentElement.remove();
 };
+
+window.deletePost = async function(postId, btn) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este momento?')) return;
+
+    try {
+        const response = await fetch(`/posts/${postId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            const article = btn.closest('article');
+            if (article) {
+                article.style.transition = 'all 0.3s ease';
+                article.style.opacity = '0';
+                article.style.transform = 'scale(0.95)';
+                setTimeout(() => article.remove(), 300);
+            } else {
+                window.location.reload();
+            }
+        } else {
+            alert(data.message || 'No se pudo eliminar la publicación.');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Ocurrió un error al intentar eliminar la publicación.');
+    }
+};

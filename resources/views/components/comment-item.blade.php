@@ -7,6 +7,9 @@
     $cLikes = $comment->likes->count();
     $cMedia = $comment->media_list;
 
+    // Condición estricta: ÚNICAMENTE el autor del comentario/respuesta verá la opción
+    $canDelete = auth()->check() && (auth()->id() === $cAuthorId);
+
     // Obtener handle o nombre del usuario al que responde
     $replyToHandle = null;
     if ($level > 0 && $comment->parent && $comment->parent->user) {
@@ -17,19 +20,45 @@
 @endphp
 
 <div class="flex items-start gap-2.5 group" id="comment-{{ $comment->id_comentario }}">
-    <a href="{{ route('profile.show', $comment->user->id_usuario ?? $comment->id_usuario) }}">
-        <img src="{{ $comment->user->avatar_url ?? asset('images/default-avatar.svg') }}" class="w-7 h-7 rounded-full object-cover">
+    <a href="{{ route('profile.show', $cAuthorId) }}">
+        <img src="{{ $cAvatar }}" class="w-7 h-7 rounded-full object-cover">
     </a>
     
     <div class="flex-1 min-w-0 space-y-1">
-        <div class="flex items-center gap-1.5">
-            <a href="{{ route('profile.show', $cAuthorId) }}" class="text-xs font-bold text-white hover:text-[#FF3D57] transition-colors truncate">
-                {{ $comment->user->nombre ?? 'Usuario' }}
-            </a>
-            @if($comment->user?->es_verificado)
-                <i class="fa-solid fa-circle-check text-[#7C5CFF] text-[10px]" title="Melómano verificado"></i>
+        <!-- CABECERA DEL COMENTARIO -->
+        <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-1.5 min-w-0">
+                <a href="{{ route('profile.show', $cAuthorId) }}" class="text-xs font-bold text-white hover:text-[#FF3D57] transition-colors truncate">
+                    {{ $comment->user->nombre ?? 'Usuario' }}
+                </a>
+                @if($comment->user?->es_verificado)
+                    <i class="fa-solid fa-circle-check text-[#7C5CFF] text-[10px]" title="Melómano verificado"></i>
+                @endif
+                <span class="text-[10px] text-[#9A9AA5] flex-shrink-0">· {{ $comment->created_at->diffForHumans() }}</span>
+            </div>
+
+            <!-- LOS TRES PUNTOS Y EL MENÚ SOLO EXISTEN EN EL DOM SI ES EL DUEÑO -->
+            @if($canDelete)
+                <div class="relative flex-shrink-0" x-data="{ openMenu: false }">
+                    <button type="button" 
+                            @click="openMenu = !openMenu" 
+                            class="text-[#6A6A75] hover:text-white p-1 rounded-lg transition-colors cursor-pointer focus:outline-none">
+                        <i class="fa-solid fa-ellipsis text-xs"></i>
+                    </button>
+
+                    <div x-show="openMenu" 
+                         @click.outside="openMenu = false" 
+                         x-cloak 
+                         class="absolute right-0 top-full mt-1 z-30 w-32 bg-[#17171F] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1">
+                        <button type="button" 
+                                onclick="deleteComment({{ $comment->id_comentario }}, this)" 
+                                class="w-full text-left px-3 py-1.5 text-xs text-[#FF3D57] hover:bg-white/5 flex items-center gap-2 transition-colors cursor-pointer">
+                            <i class="fa-solid fa-trash-can text-[11px]"></i>
+                            <span>Eliminar</span>
+                        </button>
+                    </div>
+                </div>
             @endif
-            <span class="text-[10px] text-[#9A9AA5] flex-shrink-0">· {{ $comment->created_at->diffForHumans() }}</span>
         </div>
 
         <p class="text-xs sm:text-sm text-[#F5F5F7] leading-relaxed break-words">

@@ -7,6 +7,7 @@
      x-transition:leave-start="opacity-100 scale-100 translate-y-0"
      x-transition:leave-end="opacity-0 scale-95 -translate-y-2"
      x-cloak
+     style="display: none;"
      class="absolute top-full right-3 sm:right-6 md:right-8 mt-2 z-50 w-[calc(100vw-24px)] sm:w-[410px] rounded-2xl overflow-hidden bg-[#0C0C13]/95 backdrop-blur-xl border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.95)]">
 
     <!-- HEADER PANEL -->

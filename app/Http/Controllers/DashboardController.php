@@ -83,7 +83,7 @@ class DashboardController extends Controller
             }
         }
 
-        Publicacion::create([
+        $post = Publicacion::create([
             'id_usuario' => Auth::id(),
             'show_nombre' => $validated['show_nombre'] ?? null,
             'tipo' => $validated['tipo'],
@@ -95,6 +95,28 @@ class DashboardController extends Controller
             'ubicacion' => $validated['ubicacion'] ?? null,
             'encuesta' => $encuestaData,
         ]);
+
+        // DETECCIÓN Y NOTIFICACIÓN DE MENCIONES EN PUBLICACIONES (@)
+        if (!empty($validated['contenido'])) {
+            preg_match_all('/@([a-zA-Z0-9_]+)/', $validated['contenido'], $matches);
+            if (!empty($matches[1])) {
+                $handles = array_unique(array_map('strtolower', $matches[1]));
+                $mentionedUsers = User::whereIn('handle', $handles)
+                    ->where('id_usuario', '!=', Auth::id())
+                    ->get();
+
+                foreach ($mentionedUsers as $mUser) {
+                    Notificacion::crear(
+                        idUsuario: $mUser->id_usuario,
+                        idActor: Auth::id(),
+                        tipo: 'mention',
+                        accion: 'te pidió o mencionó en',
+                        subject: $post->show_nombre ?? 'un momento',
+                        idPublicacion: $post->id_publicacion
+                    );
+                }
+            }
+        }
 
         return redirect()->route('dashboard');
     }
@@ -152,6 +174,28 @@ class DashboardController extends Controller
                 subject: $post->show_nombre ?? 'un momento',
                 idPublicacion: $post->id_publicacion
             );
+        }
+
+        // DETECCIÓN Y NOTIFICACIÓN DE MENCIONES EN COMENTARIOS (@)
+        if (!empty($validated['contenido'])) {
+            preg_match_all('/@([a-zA-Z0-9_]+)/', $validated['contenido'], $matches);
+            if (!empty($matches[1])) {
+                $handles = array_unique(array_map('strtolower', $matches[1]));
+                $mentionedUsers = User::whereIn('handle', $handles)
+                    ->where('id_usuario', '!=', Auth::id())
+                    ->get();
+
+                foreach ($mentionedUsers as $mUser) {
+                    Notificacion::crear(
+                        idUsuario: $mUser->id_usuario,
+                        idActor: Auth::id(),
+                        tipo: 'mention',
+                        accion: 'te mencionó en un comentario en',
+                        subject: $post->show_nombre ?? 'un momento',
+                        idPublicacion: $post->id_publicacion
+                    );
+                }
+            }
         }
 
         return redirect()->route('posts.show', $post->id_publicacion);
@@ -274,5 +318,48 @@ class DashboardController extends Controller
             'liked' => $liked,
             'likes_count' => $comment->likes()->count(),
         ]);
+    }
+
+    public function destroyComment($id)
+    {
+        $comment = Comentario::findOrFail($id);
+        $userId = Auth::id();
+
+        // Validar que ÚNICAMENTE el creador del comentario pueda eliminarlo
+        if ($comment->id_usuario !== $userId) {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function destroyPost($id)
+    {
+        $post = Publicacion::findOrFail($id);
+        $userId = Auth::id();
+
+        // Validar que ÚNICAMENTE el autor de la publicación pueda eliminarla
+        if ($post->id_usuario !== $userId) {
+            return response()->json(['success' => false, 'message' => 'No autorizado para eliminar este momento.'], 403);
+        }
+
+        // Eliminar archivos multimedia asociados de la memoria física
+        if (!empty($post->imagenes) && is_array($post->imagenes)) {
+            foreach ($post->imagenes as $img) {
+                if (Storage::disk('public')->exists($img)) {
+                    Storage::disk('public')->delete($img);
+                }
+            }
+        } elseif (!empty($post->imagen)) {
+            if (Storage::disk('public')->exists($post->imagen)) {
+                Storage::disk('public')->delete($post->imagen);
+            }
+        }
+
+        $post->delete();
+
+        return response()->json(['success' => true, 'message' => 'Publicación eliminada correctamente.']);
     }
 }

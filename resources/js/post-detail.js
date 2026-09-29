@@ -341,3 +341,48 @@ window.toggleCommentReplies = function(commentId) {
         }
     }
 };
+
+// CONTROL ANTI-DOBLE ENVÍO
+let isCommentSubmitting = false;
+
+window.handleCommentSubmit = function(form) {
+    if (isCommentSubmitting) {
+        return false;
+    }
+    
+    isCommentSubmitting = true;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    return true;
+};
+
+// ELIMINACIÓN DE COMENTARIOS / RESPUESTAS
+window.deleteComment = async function(commentId, btnElement) {
+    if (!confirm('¿Estás seguro de que deseas eliminar este comentario?')) return;
+
+    try {
+        const response = await fetch(`/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        if (response.ok && data.success) {
+            const commentNode = btnElement.closest('.comment-item-container') || btnElement.closest('[id^="comment-"]');
+            if (commentNode) {
+                commentNode.remove();
+            } else {
+                window.location.reload();
+            }
+        }
+    } catch (err) {
+        console.error('Error al eliminar el comentario:', err);
+    }
+};

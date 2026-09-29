@@ -10,6 +10,9 @@
     $authorId = $post->user->id_usuario ?? $post->id_usuario ?? null;
     $avatarUrl = $post->user ? $post->user->avatar_url : asset('images/default-avatar.svg');
 
+    // Condición estricta: ÚNICAMENTE el autor de la publicación vera los 3 puntos y la opción de eliminar
+    $canDelete = auth()->check() && (auth()->id() === $authorId);
+
     $mediaList = $post->media_list;
 
     $encuesta = $post->encuesta;
@@ -24,26 +27,52 @@
 @endphp
 
 <article class="rounded-2xl overflow-hidden bg-[#0C0C13] border border-white/5 hover:border-white/10 transition-all">
-    <div class="flex items-center gap-2.5 px-4 pt-4 pb-3">
-        <a href="{{ route('profile.show', $authorId) }}" class="flex-shrink-0">
-            <img src="{{ $avatarUrl }}" class="w-8 h-8 rounded-full object-cover">
-        </a>
-        <div class="flex items-center gap-1.5 flex-1 min-w-0">
-            <a href="{{ route('profile.show', $authorId) }}" class="text-[#F5F5F7] text-sm font-semibold truncate hover:text-[#FF3D57]">
-                {{ $post->user->nombre ?? 'Melómano' }}
+    <!-- CABECERA DEL POST -->
+    <div class="flex items-center justify-between gap-2.5 px-4 pt-4 pb-2">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <a href="{{ route('profile.show', $authorId) }}" class="flex-shrink-0">
+                <img src="{{ $avatarUrl }}" class="w-8 h-8 rounded-full object-cover">
             </a>
-            @if($post->user?->es_verificado)
-                <i class="fa-solid fa-circle-check text-[#7C5CFF] text-xs" title="Melómano verificado"></i>
-            @endif
-            @if(!empty($post->user->handle))
-                <span class="text-[#9A9AA5] text-xs">({{ '@' . $post->user->handle }})</span>
-            @endif
-            <span class="text-[#9A9AA5] text-xs">· {{ $post->created_at ? $post->created_at->diffForHumans() : 'Reciente' }}</span>
+            <div class="flex items-center gap-1.5 flex-1 min-w-0">
+                <a href="{{ route('profile.show', $authorId) }}" class="text-[#F5F5F7] text-sm font-semibold truncate hover:text-[#FF3D57]">
+                    {{ $post->user->nombre ?? 'Melómano' }}
+                </a>
+                @if($post->user?->es_verificado)
+                    <i class="fa-solid fa-circle-check text-[#7C5CFF] text-xs" title="Melómano verificado"></i>
+                @endif
+                @if(!empty($post->user->handle))
+                    <span class="text-[#9A9AA5] text-xs">({{ '@' . $post->user->handle }})</span>
+                @endif
+                <span class="text-[#9A9AA5] text-xs flex-shrink-0">· {{ $post->created_at ? $post->created_at->diffForHumans() : 'Reciente' }}</span>
+            </div>
         </div>
+
+        <!-- TRES PUNTOS Y MENÚ ELIMINAR (SOLO PARA EL PROPIETARIO DEL POST) -->
+        @if($canDelete)
+            <div class="relative flex-shrink-0" x-data="{ openMenu: false }">
+                <button type="button" 
+                        @click="openMenu = !openMenu" 
+                        class="text-[#6A6A75] hover:text-white p-1 rounded-lg transition-colors cursor-pointer focus:outline-none">
+                    <i class="fa-solid fa-ellipsis text-xs"></i>
+                </button>
+
+                <div x-show="openMenu" 
+                     @click.outside="openMenu = false" 
+                     x-cloak 
+                     class="absolute right-0 top-full mt-1 z-30 w-32 bg-[#17171F] border border-white/10 rounded-xl shadow-2xl overflow-hidden py-1">
+                    <button type="button" 
+                            onclick="deletePost({{ $post->id_publicacion }}, this)" 
+                            class="w-full text-left px-3 py-1.5 text-xs text-[#FF3D57] hover:bg-white/5 flex items-center gap-2 transition-colors cursor-pointer">
+                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                        <span>Eliminar</span>
+                    </button>
+                </div>
+            </div>
+        @endif
     </div>
 
     @if(!empty($showTitle))
-        <a href="{{ route('posts.show', $post->id_publicacion) }}" class="block mx-4 mb-4 rounded-xl overflow-hidden border border-[#7C5CFF]/30 hover:border-[#7C5CFF]/60 transition-all">
+        <a href="{{ route('posts.show', $post->id_publicacion) }}" class="block mx-4 my-2 rounded-xl overflow-hidden border border-[#7C5CFF]/30 hover:border-[#7C5CFF]/60 transition-all">
             <div class="flex items-stretch bg-gradient-to-r from-white/[0.03] to-transparent">
                 <div class="w-1 flex-shrink-0 bg-[#7C5CFF]"></div>
                 <div class="flex-1 px-3 py-2.5 min-w-0">
@@ -61,8 +90,9 @@
         </a>
     @endif
 
-    <a href="{{ route('posts.show', $post->id_publicacion) }}" class="block px-4 pb-3 space-y-2">
-        <p class="text-[#C8C8D0] text-sm leading-relaxed">{{ $post->contenido }}</p>
+    <div onclick="if(!event.target.closest('a')){ window.location.href='{{ route('posts.show', $post->id_publicacion) }}'; }" 
+         class="px-4 pt-1 pb-3 space-y-2 cursor-pointer">
+        <p class="text-[#C8C8D0] text-sm leading-relaxed whitespace-pre-line break-words">{!! format_mentions($post->contenido) !!}</p>
 
         @if(!empty($post->ubicacion))
             <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] text-[#2FE6D0] text-xs font-medium border border-[#2FE6D0]/20">
@@ -70,7 +100,7 @@
                 <span>{{ $post->ubicacion }}</span>
             </div>
         @endif
-    </a>
+    </div>
 
     <!-- Galería Multimedia con soporte para Video -->
     @if(count($mediaList) === 1)

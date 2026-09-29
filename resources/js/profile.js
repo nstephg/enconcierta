@@ -317,5 +317,5 @@ window.addArtistTag = function() {
 
 window.updateBioCount = function(textarea) {
     const counter = document.getElementById('bioCharCounter');
-    if (counter) counter.innerText = `${textarea.value.length}/160`;
+    if (counter) counter.innerText = `${textarea.value.length}/250`;
 };
