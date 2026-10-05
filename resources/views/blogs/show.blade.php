@@ -49,7 +49,15 @@
     @php
         $prevUrl = url()->previous();
         $currUrl = url()->current();
-        $backUrl = ($prevUrl && $prevUrl !== $currUrl) ? $prevUrl : route('dashboard');
+
+        // Si la página anterior proviene de editar o crear, no regresa allí, sino al Dashboard
+        $isLoopUrl = $prevUrl && (
+            $prevUrl === $currUrl || 
+            str_contains($prevUrl, '/editar') || 
+            str_contains($prevUrl, '/blogs/crear')
+        );
+
+        $backUrl = ($prevUrl && !$isLoopUrl) ? $prevUrl : route('dashboard');
 
         $estilos = is_array($blog->estilos) 
             ? $blog->estilos 

@@ -3,7 +3,20 @@
 @php
     $prevUrl = url()->previous();
     $currUrl = url()->current();
-    $backUrl = ($prevUrl && $prevUrl !== $currUrl) ? $prevUrl : route('dashboard');
+
+    // CONTROL DE NAVEGACIÓN ANTI-BUCLE
+    if ($blog) {
+        // Al editar un blog existente, "Volver" debe retornar a la vista de lectura de ese blog
+        $backUrl = route('blogs.show', $blog->id_blog ?? $blog->id);
+    } else {
+        // Al crear un blog, se evita redirigir a rutas de creación/edición anteriores
+        $isLoop = $prevUrl && (
+            $prevUrl === $currUrl || 
+            str_contains($prevUrl, '/blogs/crear') || 
+            str_contains($prevUrl, '/editar')
+        );
+        $backUrl = ($prevUrl && !$isLoop) ? $prevUrl : route('dashboard');
+    }
 
     $estilos = is_array($blog->estilos ?? null) 
         ? $blog->estilos 
