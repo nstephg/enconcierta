@@ -19,6 +19,7 @@ class Notificacion extends Model
         'accion',
         'subject',
         'id_publicacion',
+        'id_parche',
         'leido',
     ];
 
@@ -41,11 +42,23 @@ class Notificacion extends Model
         return $this->belongsTo(Publicacion::class, 'id_publicacion', 'id_publicacion');
     }
 
+    public function parche()
+    {
+        return $this->belongsTo(Parche::class, 'id_parche', 'id_parche');
+    }
+
     /**
      * Helper para registrar notificaciones previniendo la auto-notificación
      */
-    public static function crear(int $idUsuario, int $idActor, string $tipo, string $accion, ?string $subject = null, ?int $idPublicacion = null)
-    {
+    public static function crear(
+        int $idUsuario, 
+        int $idActor, 
+        string $tipo, 
+        string $accion, 
+        ?string $subject = null, 
+        ?int $idPublicacion = null,
+        ?int $idParche = null
+    ) {
         if ($idUsuario === $idActor) {
             return null;
         }
@@ -57,6 +70,7 @@ class Notificacion extends Model
             'accion' => $accion,
             'subject' => $subject,
             'id_publicacion' => $idPublicacion,
+            'id_parche' => $idParche,
             'leido' => false,
         ]);
     }

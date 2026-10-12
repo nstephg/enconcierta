@@ -1,6 +1,34 @@
+@php
+    // Formateo seguro de notificaciones para adjuntar la imagen del evento en notificaciones de tipo parche
+    $notificacionesSistemaFormatted = collect($notificacionesSistema ?? [])->map(function($notif) {
+        $item = is_array($notif) ? $notif : $notif->toArray();
+
+        if (($item['tipo'] ?? '') === 'parche' && empty($item['event_image'])) {
+            $parcheId = $item['id_parche'] ?? null;
+            $subject = $item['subject'] ?? null;
+
+            $parche = null;
+            if ($parcheId) {
+                $parche = \App\Models\Parche::with('evento')->find($parcheId);
+            } elseif ($subject) {
+                $parche = \App\Models\Parche::where('nombre', $subject)->with('evento')->first();
+            }
+
+            if ($parche && $parche->evento) {
+                $img = $parche->evento->imagen_portada ?? $parche->evento->imagen ?? null;
+                if ($img) {
+                    $item['event_image'] = str_starts_with($img, 'http') ? $img : asset('storage/' . $img);
+                }
+            }
+        }
+
+        return $item;
+    });
+@endphp
+
 <div x-data="{ 
         openNotifs: false,
-        items: @js($notificacionesSistema ?? []),
+        items: @js($notificacionesSistemaFormatted),
         get unreadCount() {
             return this.items.filter(i => !i.leido || i.leido == 0).length;
         },

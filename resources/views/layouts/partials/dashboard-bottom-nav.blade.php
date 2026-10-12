@@ -6,7 +6,7 @@
     </a>
 
     <!-- Explorar -->
-    <a href="#" class="flex flex-col items-center gap-1 p-1 min-w-[52px] text-[#9A9AA5] hover:text-white">
+    <a href="{{ route('explorar') }}" class="flex flex-col items-center gap-1 p-1 min-w-[52px] {{ request()->routeIs('explorar*') ? 'text-[#FF3D57]' : 'text-[#9A9AA5] hover:text-white' }}">
         <i class="fa-solid fa-compass text-lg"></i>
         <span class="text-[10px] font-medium">Explorar</span>
     </a>

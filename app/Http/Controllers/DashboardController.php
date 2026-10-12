@@ -9,8 +9,13 @@ use App\Models\Like;
 use App\Models\Notificacion;
 use App\Models\Publicacion;
 use App\Models\User;
+use App\Models\Parche;
+use App\Models\ParcheMiembro;
+use App\Models\ParcheMensaje;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+
 
 class DashboardController extends Controller
 {
@@ -18,9 +23,13 @@ class DashboardController extends Controller
     {
         $upcomingEvents = Evento::orderBy('fecha', 'asc')->take(5)->get();
 
-        $posts = Publicacion::with(['user', 'evento', 'likes', 'comentarios' => function($q) {
-            $q->whereNull('parent_id');
-        }])->latest('created_at')->get();
+        // Se filtran únicamente publicaciones de tipo 'review' para no mezclar los parches en el feed
+        $posts = Publicacion::where('tipo', 'review')
+            ->with(['user', 'evento', 'likes', 'comentarios' => function($q) {
+                $q->whereNull('parent_id');
+            }])
+            ->latest('created_at')
+            ->get();
 
         $suggestedUsers = User::where('id_usuario', '!=', Auth::id())
             ->where('id_rol', '!=', 2)
@@ -361,5 +370,390 @@ class DashboardController extends Controller
         $post->delete();
 
         return response()->json(['success' => true, 'message' => 'Publicación eliminada correctamente.']);
+    }
+
+    public function explorar(Request $request)
+    {
+        $query = Evento::query();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('artista', 'like', "%{$search}%")
+                  ->orWhere('nombre', 'like', "%{$search}%")
+                  ->orWhere('lugar', 'like', "%{$search}%")
+                  ->orWhere('ciudad', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('ciudad') && $request->ciudad !== 'Todas') {
+            $query->where('ciudad', $request->ciudad);
+        }
+
+        $eventos = $query->withCount('parches')
+            ->with('participantes')
+            ->orderBy('fecha', 'asc')
+            ->get();
+
+        return view('dashboard.explorar', compact('eventos'));
+    }
+
+    public function showEvento($id)
+    {
+        $evento = Evento::with('participantes')->findOrFail($id);
+
+        $parches = Parche::where('id_evento', $evento->id_evento)
+            ->with(['creador', 'miembros.user', 'mensajes.user'])
+            ->latest()
+            ->get();
+
+        return view('dashboard.explorar-show', compact('evento', 'parches'));
+    }
+
+    public function showParche($id)
+    {
+        $parche = Parche::with(['creador', 'evento', 'miembros.user', 'mensajes.user', 'mensajes.parent.user'])
+            ->findOrFail($id);
+
+        $evento = $parche->evento;
+
+        return view('dashboard.parche-detail', compact('parche', 'evento'));
+    }
+
+    public function storeParche(Request $request)
+    {
+        $validated = $request->validate([
+            'id_evento' => ['required', 'exists:eventos,id_evento'],
+            'titulo' => ['nullable', 'string', 'max:255'],
+            'nombre' => ['nullable', 'string', 'max:255'],
+            'tipo_plan' => ['nullable', 'string', 'max:255'],
+            'sector' => ['nullable', 'string', 'max:255'],
+            'hora_encuentro' => ['nullable', 'string', 'max:255'],
+            'cupos' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'contenido' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $nombreParche = $request->input('titulo') ?? $request->input('nombre') ?? 'Parche ' . ($request->input('tipo_plan') ?? '');
+
+        $parche = Parche::create([
+            'id_evento' => $validated['id_evento'],
+            'id_usuario_creador' => Auth::id(),
+            'nombre' => $nombreParche,
+            'tipo_plan' => $validated['tipo_plan'] ?? 'Previa',
+            'sector' => $validated['sector'] ?? 'General',
+            'hora_encuentro' => $validated['hora_encuentro'] ?? '05:30 p. m.',
+            'cupos' => (int) ($validated['cupos'] ?? 4),
+            'contenido' => $validated['contenido'] ?? null,
+        ]);
+
+        ParcheMiembro::create([
+            'id_parche' => $parche->id_parche,
+            'id_usuario' => Auth::id(),
+            'estado' => 'activo',
+        ]);
+
+        return redirect()->route('parche.show', $parche->id_parche);
+    }
+
+    public function updateParche(Request $request, $id)
+    {
+        $parche = Parche::findOrFail($id);
+
+        if (Auth::id() !== $parche->id_usuario_creador && Auth::user()->id_rol !== 2) {
+            return redirect()->back()->with('error', 'No autorizado.');
+        }
+
+        $validated = $request->validate([
+            'show_nombre' => ['required', 'string', 'max:255'],
+            'tipo_plan' => ['nullable', 'string', 'max:255'],
+            'sector' => ['nullable', 'string', 'max:255'],
+            'hora_encuentro' => ['nullable', 'string', 'max:255'],
+            'cupos' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'contenido' => ['nullable', 'string', 'max:1000'],
+            'plan_noche' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $parche->update([
+            'nombre' => $validated['show_nombre'],
+            'tipo_plan' => $validated['tipo_plan'] ?? $parche->tipo_plan,
+            'sector' => $validated['sector'] ?? $parche->sector,
+            'hora_encuentro' => $validated['hora_encuentro'] ?? $parche->hora_encuentro,
+            'cupos' => $validated['cupos'] ?? $parche->cupos,
+            'contenido' => $validated['contenido'] ?? $parche->contenido,
+            'plan_noche' => $validated['plan_noche'] ?? $parche->plan_noche,
+        ]);
+
+        return redirect()->route('parche.show', $parche->id_parche)->with('success', 'Parche actualizado.');
+    }
+
+    public function destroyParche($id)
+    {
+        $parche = Parche::findOrFail($id);
+
+        if (Auth::id() !== $parche->id_usuario_creador && Auth::user()->id_rol !== 2) {
+            return redirect()->back()->with('error', 'No tienes permisos para eliminar este parche.');
+        }
+
+        $eventId = $parche->id_evento;
+        $parche->delete();
+
+        return redirect()->route('explorar.show', $eventId)->with('success', 'Parche eliminado correctamente.');
+    }
+
+    public function joinParche($id)
+    {
+        $parche = Parche::with('miembros')->findOrFail($id);
+        $userId = Auth::id();
+
+        $miembro = ParcheMiembro::where('id_parche', $parche->id_parche)
+            ->where('id_usuario', $userId)
+            ->first();
+
+        if ($miembro) {
+            if ($miembro->estado === 'expulsado') {
+                return redirect()->back()->with('error', 'Has sido expulsado de este parche y no puedes volver a unirte.');
+            }
+            if ($miembro->estado === 'activo') {
+                return redirect()->route('parche.show', $parche->id_parche);
+            }
+        }
+
+        $activosCount = $parche->miembros->where('estado', 'activo')->count();
+        if ($activosCount >= $parche->cupos) {
+            return redirect()->back()->with('error', 'El parche ya no tiene cupos disponibles.');
+        }
+
+        ParcheMiembro::create([
+            'id_parche' => $parche->id_parche,
+            'id_usuario' => $userId,
+            'estado' => 'activo',
+        ]);
+
+        // NOTIFICACIÓN: Se unió un integrante al parche
+        if ($parche->id_usuario_creador !== $userId) {
+            Notificacion::crear(
+                idUsuario: $parche->id_usuario_creador,
+                idActor: $userId,
+                tipo: 'parche',
+                accion: 'se unió a tu parche',
+                subject: $parche->nombre,
+                idParche: $parche->id_parche
+            );
+        }
+
+        return redirect()->route('parche.show', $parche->id_parche);
+    }
+
+    public function leaveParche($id)
+    {
+        $parche = Parche::findOrFail($id);
+        $userId = Auth::id();
+
+        if ($userId === $parche->id_usuario_creador) {
+            return redirect()->back()->with('error', 'Como anfitrión no puedes salir, solo eliminar el parche.');
+        }
+
+        ParcheMiembro::where('id_parche', $parche->id_parche)
+            ->where('id_usuario', $userId)
+            ->delete();
+
+        return redirect()->route('explorar.show', $parche->id_evento)->with('success', 'Has salido del parche.');
+    }
+
+    public function kickMiembro($id, $userId)
+    {
+        $parche = Parche::findOrFail($id);
+
+        if (Auth::id() !== $parche->id_usuario_creador && Auth::user()->id_rol !== 2) {
+            return redirect()->back()->with('error', 'No autorizado.');
+        }
+
+        if ((int)$userId === $parche->id_usuario_creador) {
+            return redirect()->back()->with('error', 'No puedes expulsar al anfitrión.');
+        }
+
+        ParcheMiembro::updateOrCreate(
+            ['id_parche' => $parche->id_parche, 'id_usuario' => $userId],
+            ['estado' => 'expulsado']
+        );
+
+        return redirect()->route('parche.show', $parche->id_parche)->with('success', 'Miembro expulsado y vetado del parche.');
+    }
+
+    public function storeParcheComment(Request $request, $id)
+    {
+        $parche = Parche::with('evento')->findOrFail($id);
+        $user = Auth::user();
+        $userId = $user->id_usuario ?? $user->id;
+
+        $miembro = ParcheMiembro::where('id_parche', $parche->id_parche)
+            ->where('id_usuario', $userId)
+            ->first();
+
+        if ($miembro && $miembro->estado === 'expulsado') {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'No puedes enviar mensajes en este parche.'], 403);
+            }
+            return redirect()->back()->with('error', 'No puedes enviar mensajes en este parche.');
+        }
+
+        $texto = $request->input('mensaje') ?? $request->input('contenido');
+
+        if (empty(trim($texto ?? '')) && empty($request->input('gif_url')) && !$request->hasFile('imagenes')) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'El mensaje no puede estar vacío.'], 422);
+            }
+            return redirect()->back()->with('error', 'El mensaje no puede estar vacío.');
+        }
+
+        $imagenesPaths = [];
+        if ($request->hasFile('imagenes')) {
+            foreach ($request->file('imagenes') as $file) {
+                $imagenesPaths[] = $file->store('parches/chat', 'public');
+            }
+        }
+
+        $mensaje = ParcheMensaje::create([
+            'id_parche' => $parche->id_parche,
+            'id_usuario' => $userId,
+            'mensaje' => $texto ?? '',
+            'parent_id' => $request->input('parent_id') ?: null,
+            'gif_url' => $request->input('gif_url') ?: null,
+            'imagenes' => !empty($imagenesPaths) ? $imagenesPaths : null,
+        ]);
+
+        $mensaje->load(['user', 'parent.user']);
+
+        // NOTIFICACIONES UNIFICADAS Y ACUMULATIVAS POR PARCHE
+        $miembrosNotificar = ParcheMiembro::where('id_parche', $parche->id_parche)
+            ->where('estado', 'activo')
+            ->where('id_usuario', '!=', $userId)
+            ->pluck('id_usuario');
+
+        foreach ($miembrosNotificar as $idMiembro) {
+            $notifExistente = Notificacion::where('id_usuario', $idMiembro)
+                ->where('tipo', 'parche')
+                ->where('subject', $parche->nombre)
+                ->where('leido', false)
+                ->first();
+
+            if ($notifExistente) {
+                // Acumular cantidad de nuevos mensajes
+                if (preg_match('/\((\d+) nuevos\)/', $notifExistente->accion, $matches)) {
+                    $count = ((int) $matches[1]) + 1;
+                } else {
+                    $count = 2;
+                }
+
+                $notifExistente->update([
+                    'id_actor' => $userId,
+                    'id_parche' => $parche->id_parche,
+                    'accion' => "tiene nueva actividad ({$count} nuevos)",
+                    'created_at' => now(),
+                ]);
+            } else {
+                Notificacion::crear(
+                    idUsuario: $idMiembro,
+                    idActor: $userId,
+                    tipo: 'parche',
+                    accion: 'tiene nuevos mensajes',
+                    subject: $parche->nombre,
+                    idParche: $parche->id_parche
+                );
+            }
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'comentario' => [
+                    'id' => $mensaje->id_mensaje ?? $mensaje->id,
+                    'id_usuario' => $mensaje->id_usuario,
+                    'is_me' => true,
+                    'nombre' => $mensaje->user->nombre ?? 'Usuario',
+                    'avatar' => $mensaje->user->avatar ? asset('storage/' . $mensaje->user->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($mensaje->user->nombre ?? 'U'),
+                    'mensaje' => $mensaje->mensaje,
+                    'gif_url' => $mensaje->gif_url,
+                    'imagenes' => $mensaje->imagenes,
+                    'has_parent' => !empty($mensaje->parent_id) && $mensaje->parent,
+                    'parent_user' => $mensaje->parent?->user?->nombre ?? 'Usuario',
+                    'parent_mensaje' => $mensaje->parent?->mensaje ?? '',
+                    'created_at' => $mensaje->created_at ? $mensaje->created_at->format('h:i A') : date('h:i A'),
+                ]
+            ]);
+        }
+
+        return redirect()->route('parche.show', ['parche' => $id, 'tab' => 'chat']);
+    }
+
+    public function getParcheMensajes(Request $request, $id)
+    {
+        $lastId = $request->query('last_id', 0);
+
+        $nuevosMensajes = ParcheMensaje::where('id_parche', $id)
+            ->where('id_mensaje', '>', $lastId)
+            ->with(['user', 'parent.user'])
+            ->orderBy('id_mensaje', 'asc')
+            ->get();
+
+        $userId = Auth::id();
+
+        $formatted = $nuevosMensajes->map(function ($msg) use ($userId) {
+            return [
+                'id' => $msg->id_mensaje ?? $msg->id,
+                'id_usuario' => $msg->id_usuario,
+                'is_me' => $msg->id_usuario === $userId,
+                'nombre' => $msg->user->nombre ?? 'Usuario',
+                'avatar' => $msg->user->avatar ? asset('storage/' . $msg->user->avatar) : 'https://ui-avatars.com/api/?name=' . urlencode($msg->user->nombre ?? 'U'),
+                'mensaje' => $msg->mensaje,
+                'gif_url' => $msg->gif_url,
+                'imagenes' => $msg->imagenes,
+                'has_parent' => !empty($msg->parent_id) && $msg->parent,
+                'parent_user' => $msg->parent?->user?->nombre ?? 'Usuario',
+                'parent_mensaje' => $msg->parent?->mensaje ?? '',
+                'created_at' => $msg->created_at ? $msg->created_at->format('h:i A') : date('h:i A'),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'mensajes' => $formatted
+        ]);
+    }
+
+    public function readAndRedirect($id)
+    {
+        $notif = Notificacion::where('id_notificacion', $id)
+            ->where('id_usuario', Auth::id())
+            ->first();
+
+        if ($notif) {
+            $notif->update(['leido' => true]);
+
+            // 1. Redirección para momentos / publicaciones
+            if ($notif->id_publicacion) {
+                return redirect()->route('posts.show', $notif->id_publicacion);
+            }
+
+            // 2. Redirección directa por ID de parche
+            if ($notif->id_parche) {
+                return redirect()->route('parche.show', ['parche' => $notif->id_parche, 'tab' => 'chat']);
+            }
+
+            // 3. Fallback de resolución de parche por nombre en subject
+            if (($notif->tipo === 'parche' || str_contains(strtolower($notif->accion), 'parche')) && $notif->subject) {
+                $parche = Parche::where('nombre', $notif->subject)->first();
+                if ($parche) {
+                    return redirect()->route('parche.show', ['parche' => $parche->id_parche, 'tab' => 'chat']);
+                }
+            }
+
+            // 4. Redirección para seguimiento de usuarios
+            if ($notif->tipo === 'follow' && $notif->id_actor) {
+                return redirect()->route('profile.show', $notif->id_actor);
+            }
+        }
+
+        return redirect()->route('dashboard');
     }
 }

@@ -25,12 +25,14 @@ class Publicacion extends Model
         'gifs',
         'ubicacion',
         'encuesta',
+        'fecha',
     ];
 
     protected $casts = [
         'encuesta' => 'array',
         'imagenes' => 'array',
         'gifs' => 'array',
+        'fecha' => 'datetime',
     ];
 
     public function user()

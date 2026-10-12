@@ -17,9 +17,12 @@
             @endif
         </a>
 
-        <a href="#" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-[#9A9AA5] hover:bg-white/5 hover:text-white transition-all">
+        <a href="{{ route('explorar') }}" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all relative {{ request()->routeIs('explorar*') ? 'bg-[#FF3D57]/12 text-[#FF3D57]' : 'text-[#9A9AA5] hover:bg-white/5 hover:text-white' }}">
             <i class="fa-solid fa-compass text-lg w-5 text-center"></i>
             <span class="text-sm font-medium">Explorar</span>
+            @if(request()->routeIs('explorar*'))
+                <div class="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-[#FF3D57]"></div>
+            @endif
         </a>
 
         <a href="#" class="flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-[#9A9AA5] hover:bg-white/5 hover:text-white transition-all">

@@ -17,7 +17,8 @@ Route::get('/', function () {
             ? redirect()->route('dashboard')
             : redirect()->route('profile.setup');
     }
-    return app(HomeController::class)();
+
+    return app(HomeController::class)->index();
 })->name('home');
 
 // Redirección de autenticación por GET para evitar HTTP 405
@@ -94,6 +95,22 @@ Route::middleware(['auth'])->group(function () {
 
         return response()->json(['success' => true]);
     })->name('notificaciones.eliminar');
+
+    Route::get('/notificaciones/{id}/go', [DashboardController::class, 'readAndRedirect'])->name('notificacion.go');
+
+    // Módulo de Explorar Shows y Parches
+    Route::get('/explorar', [DashboardController::class, 'explorar'])->name('explorar');
+    Route::get('/explorar/{evento}', [DashboardController::class, 'showEvento'])->name('explorar.show');
+    Route::get('/parche/{parche}', [DashboardController::class, 'showParche'])->name('parche.show');
+    Route::post('/parches', [DashboardController::class, 'storeParche'])->name('parches.store');
+    Route::post('/parche', [DashboardController::class, 'storeParche'])->name('parche.store');
+    Route::put('/parche/{id}', [DashboardController::class, 'updateParche'])->name('parche.update');
+    Route::delete('/parche/{id}', [DashboardController::class, 'destroyParche'])->name('parche.destroy');
+    Route::post('/parche/{id}/join', [DashboardController::class, 'joinParche'])->name('parche.join');
+    Route::post('/parche/{id}/leave', [DashboardController::class, 'leaveParche'])->name('parche.leave');
+    Route::post('/parche/{id}/kick/{userId}', [DashboardController::class, 'kickMiembro'])->name('parche.kick');
+    Route::post('/parche/{id}/comment', [DashboardController::class, 'storeParcheComment'])->name('parche.comment');
+    Route::get('/parches/{id}/mensajes', [DashboardController::class, 'getParcheMensajes'])->name('parche.mensajes');
 });
 
 Route::post('/login', [AuthController::class, 'login'])->name('login.perform');

@@ -1,6 +1,7 @@
 import './compose.js';
 import './post-detail.js';
 import './profile.js';
+import './parche-chat';
 
 import Alpine from 'alpinejs';
 

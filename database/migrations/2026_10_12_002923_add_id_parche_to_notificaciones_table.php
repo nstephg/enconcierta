@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('notificaciones', function (Blueprint $table) {
-            $table->string('tipo', 50)->change();
+            $table->unsignedBigInteger('id_parche')->nullable()->after('id_publicacion');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('notificaciones', function (Blueprint $table) {
-            $table->string('tipo', 255)->change();
+            $table->dropColumn('id_parche');
         });
     }
 };
