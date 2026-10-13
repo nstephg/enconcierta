@@ -3,11 +3,9 @@
         <div class="grid grid-cols-1 md:grid-cols-5 gap-10 mb-12">
             
             <div class="md:col-span-2">
-                <a href="{{ route('home') }}" class="inline-flex items-center gap-3 mb-4">
-                    <div class="px-3.5 py-2 rounded-xl border border-dashed border-white/30 bg-[#17171F]/40 text-white/70 font-mono-code text-xs font-semibold tracking-wider flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-[#FF3D57]"></span>
-                        <span>[ ENCONCIERTA ]</span>
-                    </div>
+                <a href="{{ route('home') }}" class="inline-flex items-center gap-2 group focus:outline-none" aria-label="ENCONCIERTA - Inicio">
+                    <img src="{{ asset('logo.svg') }}" alt="" class="w-8">
+                    <span class="font-headline text-lg text-[#F5F5F7] tracking-widest whitespace-nowrap group-hover:text-white transition-colors">ENCONCIERTA</span>
                 </a>
                 <p class="text-[#9A9AA5] text-sm mb-6 max-w-sm">
                     "Sincroniza tu parche, vive el show." <br/>

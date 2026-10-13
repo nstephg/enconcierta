@@ -12,9 +12,7 @@
     $generos = $user->generos ?? [];
     $artistas = $user->artistas ?? [];
 
-    $avatarUrl = !empty($user->avatar) 
-        ? (str_starts_with($user->avatar, 'http') ? $user->avatar : asset('storage/' . $user->avatar))
-        : asset('images/default-avatar.svg');
+    $avatarUrl = $user->avatar_url;
         
     $coverUrl = !empty($user->portada) 
         ? (str_starts_with($user->portada, 'http') ? $user->portada : asset('storage/' . $user->portada))
@@ -92,7 +90,7 @@
                         @php
                             $pAvatar = !empty($person->avatar) 
                                 ? (str_starts_with($person->avatar, 'http') ? $person->avatar : asset('storage/' . $person->avatar))
-                                : asset('images/default-avatar.svg');
+                                : asset('img/perfil-de-usuario.webp');
                             $isMe = auth()->id() == $person->id_usuario;
                             $pVerified = ($person->id_rol ?? 1) == 2 || !empty($person->es_verificado);
                         @endphp
@@ -122,7 +120,7 @@
                         </div>
                     @empty
                         <div class="text-center py-10 text-[#9A9AA5] text-xs">
-                            <i class="fa-solid fa-user-plus text-sm mb-2 text-[#7C5CFF]/50 block"></i>
+                             <i class="fa-solid fa-user-plus text-sm mb-2 text-[#7C5CFF]/50 block"></i>
                             {{ $isOwnProfile ? 'Aún no sigues a ningún melómano.' : 'Aún no sigue a ningún melómano.' }}
                         </div>
                     @endforelse
@@ -134,7 +132,7 @@
                         @php
                             $pAvatar = !empty($person->avatar) 
                                 ? (str_starts_with($person->avatar, 'http') ? $person->avatar : asset('storage/' . $person->avatar))
-                                : asset('images/default-avatar.svg');
+                                : asset('img/perfil-de-usuario.webp');
                             $isMe = auth()->id() == $person->id_usuario;
                             $pVerified = ($person->id_rol ?? 1) == 2 || !empty($person->es_verificado);
                         @endphp

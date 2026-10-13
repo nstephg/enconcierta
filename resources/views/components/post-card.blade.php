@@ -8,7 +8,7 @@
     $commentsCount = $post->comentarios->count();
 
     $authorId = $post->user->id_usuario ?? $post->id_usuario ?? null;
-    $avatarUrl = $post->user ? $post->user->avatar_url : asset('images/default-avatar.svg');
+    $avatarUrl = $post->user ? $post->user->avatar_url : asset('img/perfil-de-usuario.webp');
 
     // Condición estricta: ÚNICAMENTE el autor de la publicación vera los 3 puntos y la opción de eliminar
     $canDelete = auth()->check() && (auth()->id() === $authorId);
@@ -102,30 +102,41 @@
         @endif
     </div>
 
-    <!-- Galería Multimedia con soporte para Video -->
+    <!-- Galería Multimedia con soporte para Video y Lightbox -->
     @if(count($mediaList) === 1)
         <div class="mx-4 mb-3 rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0F] flex items-center justify-center max-h-[480px]">
             @if(($mediaList[0]['type'] ?? 'image') === 'video')
-                <video src="{{ $mediaList[0]['url'] }}" autoplay muted playsinline loop controls class="max-h-[480px] w-full object-cover bg-black"></video>
+                <div class="w-full relative cursor-pointer" onclick="openMediaLightbox(@js($mediaList), 0)">
+                    <video src="{{ $mediaList[0]['url'] }}" autoplay muted playsinline loop class="max-h-[480px] w-full object-cover bg-black pointer-events-none"></video>
+                    <div class="absolute inset-0 bg-transparent"></div>
+                </div>
             @else
-                <a href="{{ route('posts.show', $post->id_publicacion) }}" class="w-full h-full block">
-                    <img src="{{ $mediaList[0]['url'] }}" alt="Contenido multimedia" class="max-h-[480px] w-full object-contain">
-                </a>
+                <button type="button" 
+                        onclick="openMediaLightbox(@js($mediaList), 0)" 
+                        class="w-full h-full block cursor-pointer group relative text-left">
+                    <img src="{{ $mediaList[0]['url'] }}" alt="Contenido multimedia" class="max-h-[480px] w-full object-contain group-hover:scale-[1.01] transition-transform duration-200">
+                </button>
             @endif
         </div>
     @elseif(count($mediaList) > 1)
         <div class="mx-4 mb-3 flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1">
-            @foreach($mediaList as $media)
-                <div class="snap-start flex-shrink-0 max-w-[85%] sm:max-w-[75%] h-64 sm:h-72 rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0F] flex items-center justify-center">
+            <div class="flex gap-2.5 mx-auto">
+            @foreach($mediaList as $idx => $media)
+                <div class="snap-start flex-shrink-0 max-w-[85%] sm:max-w-[75%] h-64 sm:h-72 rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0F] flex items-center justify-center relative">
                     @if(($media['type'] ?? 'image') === 'video')
-                        <video src="{{ $media['url'] }}" autoplay muted playsinline loop controls class="w-full h-full object-cover bg-black"></video>
+                        <div class="w-full h-full cursor-pointer relative" onclick="openMediaLightbox(@js($mediaList), {{ $idx }})">
+                            <video src="{{ $media['url'] }}" autoplay muted playsinline loop class="w-full h-full object-cover bg-black pointer-events-none"></video>
+                        </div>
                     @else
-                        <a href="{{ route('posts.show', $post->id_publicacion) }}" class="w-full h-full block">
-                            <img src="{{ $media['url'] }}" alt="Contenido multimedia" class="w-full h-full object-contain">
-                        </a>
+                        <button type="button" 
+                                onclick="openMediaLightbox(@js($mediaList), {{ $idx }})" 
+                                class="w-full h-full block cursor-pointer group text-left">
+                            <img src="{{ $media['url'] }}" alt="Contenido multimedia" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200">
+                        </button>
                     @endif
                 </div>
             @endforeach
+            </div>
         </div>
     @endif
 

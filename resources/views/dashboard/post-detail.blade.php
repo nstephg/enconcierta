@@ -18,7 +18,7 @@
     $commentsCount = $post->comentarios->count();
 
     $authorId = $post->user->id_usuario ?? $post->id_usuario ?? null;
-    $authorAvatar = $post->user ? $post->user->avatar_url : asset('images/default-avatar.svg');
+    $authorAvatar = $post->user ? $post->user->avatar_url : asset('img/perfil-de-usuario.webp');
     $currentUserAvatar = auth()->user()->avatar_url;
 
     $encuesta = $post->encuesta;
@@ -142,24 +142,38 @@
 
             <!-- Galería de Medios -->
             @if(count($mediaList) === 1)
-                <div class="mx-5 mb-4 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0 md:flex-1 max-h-72 sm:max-h-80 md:max-h-[520px] bg-[#0A0A0F] flex items-center justify-center min-h-[220px]">
+                <div class="mx-5 mb-4 rounded-2xl overflow-hidden border border-white/10 flex-shrink-0 bg-[#0A0A0F] flex items-center justify-center">
                     @if(($mediaList[0]['type'] ?? 'image') === 'video')
-                        <video src="{{ $mediaList[0]['url'] }}" autoplay muted playsinline loop controls class="w-full h-full max-h-72 sm:max-h-80 md:max-h-[520px] object-cover rounded-2xl"></video>
+                        <div class="w-full relative cursor-pointer" onclick="openMediaLightbox(@js($mediaList), 0)">
+                            <video src="{{ $mediaList[0]['url'] }}" autoplay muted playsinline loop class="w-full max-h-[550px] object-contain rounded-2xl pointer-events-none"></video>
+                        </div>
                     @else
-                        <img src="{{ $mediaList[0]['url'] }}" alt="Momento" class="w-full h-full object-contain">
+                        <button type="button" 
+                                onclick="openMediaLightbox(@js($mediaList), 0)" 
+                                class="w-full block cursor-pointer text-center group">
+                            <img src="{{ $mediaList[0]['url'] }}" alt="Momento" class="w-full max-h-[550px] object-contain rounded-2xl group-hover:scale-[1.01] transition-transform duration-200">
+                        </button>
                     @endif
                 </div>
             @elseif(count($mediaList) > 1)
-                <div class="mx-5 mb-4 flex gap-2 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1 md:flex-1 items-center flex-shrink-0">
-                    @foreach($mediaList as $media)
-                        <div class="snap-start flex-shrink-0 w-64 h-52 sm:h-56 md:h-80 rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0F] flex items-center justify-center">
+                <div class="mx-5 mb-4 flex gap-2.5 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1 items-center flex-shrink-0">
+                    <div class="flex gap-2.5 mx-auto items-center">
+                    @foreach($mediaList as $idx => $media)
+                        <div class="snap-start flex-shrink-0 w-64 sm:w-72 h-64 sm:h-72 rounded-2xl overflow-hidden border border-white/10 bg-[#0A0A0F] flex items-center justify-center relative">
                             @if(($media['type'] ?? 'image') === 'video')
-                                <video src="{{ $media['url'] }}" autoplay muted playsinline loop controls class="w-full h-full object-cover rounded-2xl"></video>
+                                <div class="w-full h-full cursor-pointer relative" onclick="openMediaLightbox(@js($mediaList), {{ $idx }})">
+                                    <video src="{{ $media['url'] }}" autoplay muted playsinline loop class="w-full h-full object-cover rounded-2xl pointer-events-none"></video>
+                                </div>
                             @else
-                                <img src="{{ $media['url'] }}" alt="Momento" class="w-full h-full object-contain">
+                                <button type="button" 
+                                        onclick="openMediaLightbox(@js($mediaList), {{ $idx }})" 
+                                        class="w-full h-full block cursor-pointer group text-left">
+                                    <img src="{{ $media['url'] }}" alt="Momento" class="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-200">
+                                </button>
                             @endif
                         </div>
                     @endforeach
+                    </div>
                 </div>
             @endif
 
@@ -398,7 +412,7 @@
                     <x-comment-item :comment="$comment" :level="0" />
                 @empty
                     <div class="text-center py-8 text-[#9A9AA5] text-xs">
-                        <i class="fa-regular fa-comments text-2xl mb-1.5 text-[#7C5CFF]/60 block"></i>
+                        <i class="fa-regular fa-comments text-xl mb-1.5 text-[#7C5CFF]/60 block mr-1"></i>
                         Sé el primero en comentar esta experiencia.
                     </div>
                 @endforelse

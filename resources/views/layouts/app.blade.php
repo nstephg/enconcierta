@@ -7,6 +7,9 @@
 
     <title>@yield('title', 'ENCONCIERTA — Sincroniza tu parche, vive el show')</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('flavicon.svg') }}?v=2">
+
     <!-- Tailwind v4 CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 

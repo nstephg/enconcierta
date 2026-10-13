@@ -7,6 +7,9 @@
 
     <title>{{ $blog->titulo }} — ENCONCIERTA</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('flavicon.svg') }}?v=2">
+
     <!-- Tailwind v4 CSS & Fonts -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">

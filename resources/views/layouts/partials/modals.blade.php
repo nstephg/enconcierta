@@ -90,9 +90,7 @@
 
         <!-- Modal Header -->
         <div class="text-center pt-2 pb-4">
-            <div class="px-3.5 py-1.5 rounded-xl border border-dashed border-white/30 bg-[#0A0A0F] text-white/80 font-mono-code text-xs inline-block mb-3">
-                [ ENCONCIERTA ]
-            </div>
+            <img src="{{ asset('logo.svg') }}" alt="" class="w-8 mx-auto mb-3">
             
             <h2 class="font-headline text-2xl sm:text-3xl uppercase text-white tracking-wide leading-tight">
                 ENTRA A <span class="text-[#FF3D57]">ENCONCIERTA</span>
@@ -242,3 +240,146 @@
     <i class="fa-solid fa-circle-check text-[#2FE6D0] text-lg"></i>
     <span id="toastMessage" class="text-sm font-medium">Acción completada</span>
 </div>
+
+<!-- MODAL: VISOR DE IMÁGENES / LIGHTBOX (CON FLECHAS DE NAVEGACIÓN) -->
+<div id="mediaLightboxModal" 
+     class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/90 backdrop-blur-md select-none transition-opacity duration-200"
+     onclick="if(event.target === this) closeMediaLightbox()">
+    
+    <!-- Botón Cerrar -->
+    <button type="button" 
+            onclick="closeMediaLightbox()" 
+            class="absolute top-4 right-4 z-30 w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-sm"
+            aria-label="Cerrar visor">
+        <i class="fa-solid fa-xmark text-lg"></i>
+    </button>
+
+    <!-- Contador de Elementos (ej: 1 / 3) -->
+    <div id="lightboxCounter" class="absolute top-5 left-5 z-30 px-3 py-1 rounded-full bg-black/50 border border-white/10 text-xs font-mono text-white/80 backdrop-blur-sm">
+        1 / 1
+    </div>
+
+    <!-- Flecha Anterior -->
+    <button type="button" 
+            id="lightboxPrevBtn" 
+            onclick="navigateLightbox(-1)" 
+            class="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-[#FF3D57] border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl backdrop-blur-sm"
+            aria-label="Anterior">
+        <i class="fa-solid fa-chevron-left text-base sm:text-lg"></i>
+    </button>
+
+    <!-- Flecha Siguiente -->
+    <button type="button" 
+            id="lightboxNextBtn" 
+            onclick="navigateLightbox(1)" 
+            class="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-black/60 hover:bg-[#FF3D57] border border-white/15 text-white flex items-center justify-center transition-all cursor-pointer shadow-xl backdrop-blur-sm"
+            aria-label="Siguiente">
+        <i class="fa-solid fa-chevron-right text-base sm:text-lg"></i>
+    </button>
+
+    <!-- Contenedor del contenido (Imagen o Video) -->
+    <div class="relative max-w-[95vw] max-h-[92vh] flex items-center justify-center p-2" onclick="event.stopPropagation()">
+        <img id="lightboxImg" 
+             src="" 
+             alt="Previsualización" 
+             class="max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl transition-all duration-150">
+        <video id="lightboxVideo" 
+               src="" 
+               controls 
+               autoplay 
+               playsinline 
+               class="hidden max-w-[95vw] max-h-[90vh] object-contain rounded-xl shadow-2xl"></video>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let currentMediaItems = [];
+        let currentMediaIndex = 0;
+
+        window.openMediaLightbox = function(items, startIndex = 0) {
+            if (!items || !items.length) return;
+            currentMediaItems = items;
+            currentMediaIndex = startIndex >= 0 && startIndex < items.length ? startIndex : 0;
+            renderLightboxItem();
+            
+            const modal = document.getElementById('mediaLightboxModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+            }
+        };
+
+        window.closeMediaLightbox = function() {
+            const modal = document.getElementById('mediaLightboxModal');
+            const video = document.getElementById('lightboxVideo');
+            if (video) {
+                video.pause();
+                video.src = '';
+            }
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.classList.remove('overflow-hidden');
+            }
+        };
+
+        window.navigateLightbox = function(direction) {
+            if (!currentMediaItems.length) return;
+            currentMediaIndex = (currentMediaIndex + direction + currentMediaItems.length) % currentMediaItems.length;
+            renderLightboxItem();
+        };
+
+        function renderLightboxItem() {
+            const item = currentMediaItems[currentMediaIndex];
+            if (!item) return;
+
+            const imgEl = document.getElementById('lightboxImg');
+            const videoEl = document.getElementById('lightboxVideo');
+            const counterEl = document.getElementById('lightboxCounter');
+            const prevBtn = document.getElementById('lightboxPrevBtn');
+            const nextBtn = document.getElementById('lightboxNextBtn');
+
+            if (counterEl) {
+                counterEl.textContent = `${currentMediaIndex + 1} / ${currentMediaItems.length}`;
+                counterEl.style.display = currentMediaItems.length > 1 ? 'block' : 'none';
+            }
+
+            if (prevBtn) prevBtn.style.display = currentMediaItems.length > 1 ? 'flex' : 'none';
+            if (nextBtn) nextBtn.style.display = currentMediaItems.length > 1 ? 'flex' : 'none';
+
+            const isVideo = item.type === 'video' || (typeof item.url === 'string' && item.url.match(/\.(mp4|webm|mov|ogg)$/i));
+
+            if (isVideo) {
+                if (imgEl) imgEl.classList.add('hidden');
+                if (videoEl) {
+                    videoEl.classList.remove('hidden');
+                    videoEl.src = item.url;
+                    videoEl.play().catch(() => {});
+                }
+            } else {
+                if (videoEl) {
+                    videoEl.pause();
+                    videoEl.classList.add('hidden');
+                    videoEl.src = '';
+                }
+                if (imgEl) {
+                    imgEl.classList.remove('hidden');
+                    imgEl.src = item.url;
+                }
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('mediaLightboxModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+
+            if (e.key === 'Escape') {
+                closeMediaLightbox();
+            } else if (e.key === 'ArrowLeft') {
+                navigateLightbox(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateLightbox(1);
+            }
+        });
+    })();
+</script>

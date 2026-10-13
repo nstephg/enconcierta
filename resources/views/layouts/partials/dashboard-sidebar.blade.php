@@ -1,9 +1,7 @@
 <aside id="sidebar-menu" class="hidden md:flex flex-col h-screen sticky top-0 w-[240px] flex-shrink-0 bg-[#0C0C13] border-r border-white/5 transition-all duration-300 z-30">
     <!-- BRAND HEADER -->
-    <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-5 py-5 min-h-[68px] flex-shrink-0 group">
-        <div class="w-9 h-9 rounded-xl flex-shrink-0 bg-[#FF3D57] flex items-center justify-center shadow-[0_0_14px_rgba(255,61,87,0.45)] group-hover:scale-105 transition-transform">
-            <i class="fa-solid fa-compact-disc text-white text-base"></i>
-        </div>
+    <a href="{{ route('dashboard') }}" class="flex items-center gap-2 px-5 py-5 min-h-[68px] flex-shrink-0 group">
+        <img src="{{ asset('logo.svg') }}" alt="" class="w-8">
         <span class="font-headline text-lg text-[#F5F5F7] tracking-widest whitespace-nowrap group-hover:text-white transition-colors">ENCONCIERTA</span>
     </a>
 
@@ -85,9 +83,7 @@
                 @foreach($savedUsers as $sUser)
                     @php
                         $isActive = $sUser->id_usuario === auth()->id();
-                        $sAvatar = !empty($sUser->avatar) 
-                            ? (str_starts_with($sUser->avatar, 'http') ? $sUser->avatar : asset('storage/' . $sUser->avatar))
-                            : asset('images/default-avatar.svg');
+                        $sAvatar = $sUser->avatar_url;
                     @endphp
 
                     <div class="flex items-center justify-between p-1 rounded-lg transition-colors {{ $isActive ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]' }}">

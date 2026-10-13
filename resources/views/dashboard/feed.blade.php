@@ -13,7 +13,7 @@
         @empty
             <div class="rounded-2xl p-8 bg-[#0C0C13] border border-white/5 text-center">
                 <i class="fa-solid fa-compact-disc text-3xl text-[#7C5CFF] mb-3"></i>
-                <h3 class="text-[#F5F5F7] text-base font-semibold">Aún no hay publicaciones en la tribu</h3>
+                <h3 class="text-[#F5F5F7] text-base font-semibold">Aún no hay publicaciones</h3>
                 <p class="text-[#9A9AA5] text-xs mt-1">Sé el primero en registrar un momento para los próximos shows.</p>
             </div>
         @endforelse
@@ -25,9 +25,7 @@
             <div class="flex flex-col gap-3">
                 @foreach($suggestedUsers as $user)
                     @php
-                        $uAvatar = !empty($user->avatar) 
-                            ? (str_starts_with($user->avatar, 'http') ? $user->avatar : asset('storage/' . $user->avatar))
-                            : asset('images/default-avatar.svg');
+                        $uAvatar = $user->avatar_url;
                         $isVerified = ($user->id_rol ?? 1) == 2 || !empty($user->es_verificado);
                         $isFollowing = !empty($user->is_following);
                     @endphp

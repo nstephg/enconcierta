@@ -2,7 +2,7 @@
 
 @php
     $cAuthorId = $comment->user->id_usuario ?? $comment->id_usuario ?? null;
-    $cAvatar = $comment->user ? $comment->user->avatar_url : asset('images/default-avatar.svg');
+    $cAvatar = $comment->user ? $comment->user->avatar_url : asset('img/perfil-de-usuario.webp');
     $cHasLiked = $comment->isLikedBy(auth()->id());
     $cLikes = $comment->likes->count();
     $cMedia = $comment->media_list;

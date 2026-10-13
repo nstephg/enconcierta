@@ -83,6 +83,12 @@
                     this.openMentions = false;
                 }
             },
+            autoResize(el) {
+                if (!el) el = document.getElementById('composeTextarea');
+                if (!el) return;
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+            },
             insertMention(handle) {
                 const textarea = document.getElementById('composeTextarea');
                 if (!textarea) return;
@@ -100,7 +106,10 @@
                 
                 this.contenidoText = textarea.value;
                 this.openMentions = false;
-                textarea.focus();
+                this.$nextTick(() => {
+                    this.autoResize(textarea);
+                    textarea.focus();
+                });
             }
           }"
           @submit="if (isSubmitting) { $event.preventDefault(); return false; } isSubmitting = true;">
@@ -114,27 +123,22 @@
             <input type="text" name="show_nombre" onkeydown="if(event.key === 'Enter') event.preventDefault()" class="flex-1 bg-transparent text-[#F5F5F7] text-xs outline-none placeholder-[#9A9AA5]" placeholder="¿De qué show es este momento? (Opcional)">
         </div>
 
-        <!-- Input Contenido con Resaltado Dinámico de Menciones -->
+        <!-- Input Contenido -->
         <div class="flex items-start gap-3 relative">
             <a href="{{ route('profile.show') }}" class="flex-shrink-0 z-10">
                 <img src="{{ auth()->user()->avatar_url }}" alt="Usuario" class="w-9 h-9 rounded-full object-cover border border-white/10 hover:border-[#FF3D57] transition-all">
             </a>
 
-            <div class="relative flex-1 min-w-0 min-h-[80px]">
-                <!-- Capa espejo para texto con menciones moradas -->
-                <div x-ref="composeBackdrop" 
-                     class="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-sm font-sans font-normal leading-relaxed tracking-normal text-[#F5F5F7] overflow-hidden select-none p-0 m-0 border-0"
-                     x-html="highlightMentions(contenidoText)"></div>
-
+            <div class="relative flex-1 min-w-0">
                 <textarea id="composeTextarea" 
                           name="contenido" 
                           rows="3" 
                           maxlength="1000"
                           x-model="contenidoText"
-                          @input="handleInput($event)"
-                          @scroll="$refs.composeBackdrop.scrollTop = $el.scrollTop"
+                          @input="handleInput($event); $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px';"
+                          x-init="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px';"
                           @keydown.backspace="handleBackspace($event)"
-                          class="w-full bg-transparent text-transparent caret-white text-sm font-sans font-normal leading-relaxed tracking-normal resize-none outline-none focus:outline-none focus:ring-0 placeholder-[#9A9AA5] relative z-10 p-0 m-0 border-0" 
+                          class="w-full bg-transparent text-[#F5F5F7] text-sm font-sans font-normal leading-relaxed tracking-normal resize-none outline-none focus:outline-none focus:ring-0 placeholder-[#9A9AA5] p-0 m-0 border-0 selection:bg-[#FF3D57]/30 selection:text-white" 
                           placeholder="¿Mmm?"></textarea>
             </div>
         </div>

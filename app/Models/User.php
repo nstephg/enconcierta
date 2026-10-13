@@ -49,7 +49,7 @@ class User extends Authenticatable
                 ? $this->avatar 
                 : asset('storage/' . $this->avatar);
         }
-        return asset('images/default-avatar.svg');
+        return asset('img/perfil-de-usuario.webp');
     }
 
     public function getCoverUrlAttribute()

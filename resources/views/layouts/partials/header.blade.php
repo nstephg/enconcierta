@@ -2,11 +2,9 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between relative z-50">
         
         <!-- BRAND LOGO -->
-        <a href="{{ route('home') }}" class="flex items-center gap-3 group focus:outline-none" aria-label="ENCONCIERTA - Inicio">
-            <div class="px-3.5 py-2 rounded-xl border border-dashed border-white/30 bg-[#17171F]/40 backdrop-blur-sm text-white/70 font-mono-code text-xs font-semibold tracking-wider group-hover:border-[#FF3D57] group-hover:text-white transition-all duration-300 flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-[#FF3D57]"></span>
-                <span>[ ENCONCIERTA ]</span>
-            </div>
+        <a href="{{ route('home') }}" class="flex items-center gap-2 group focus:outline-none" aria-label="ENCONCIERTA - Inicio">
+            <img src="{{ asset('logo.svg') }}" alt="" class="w-8">
+            <span class="font-headline text-lg text-[#F5F5F7] tracking-widest whitespace-nowrap group-hover:text-white transition-colors">ENCONCIERTA</span>
         </a>
 
         <!-- DESKTOP NAV LINKS -->
